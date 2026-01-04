@@ -18,7 +18,7 @@ import AudioPlayer from './components/AudioPlayer';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
-  { id: 'pic-1', nama: 'PIC Swakarya', role: UserRole.PIC, avatar: 'https://i.imgur.com/P7t1bQy.png', password: 'admin123' },
+  { id: 'pic-1', nama: 'PIC SWAPRO', role: UserRole.PIC, avatar: 'https://i.imgur.com/P7t1bQy.png', password: 'admin123' },
 ];
 
 const App: React.FC = () => {
