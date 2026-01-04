@@ -298,7 +298,7 @@ const App: React.FC = () => {
           // --- Logged-in View ---
           <div className="flex h-screen bg-[var(--background)] overflow-hidden">
             <Sidebar user={state.currentUser} onLogout={logout} />
-            <main className="flex-1 overflow-y-auto pb-24">
+            <main className="flex-1 overflow-y-auto pb-24 min-w-0">
               <Routes>
                 <Route path="/" element={<Dashboard state={state} />} />
                 <Route path="/database" element={

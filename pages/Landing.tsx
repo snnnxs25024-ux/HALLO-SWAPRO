@@ -283,11 +283,10 @@ const Landing: React.FC = () => {
               <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Sistem Pintar Karyawan</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-[1.15] mb-6 tracking-tight">
-              Bekerja Lebih <span className="text-blue-600 italic">Smart</span>, <br />
-              Tetap Terlindungi.
+              Portal Profesional <br /> Karyawan <span className="text-blue-600">SWAPRO</span>.
             </h1>
             <p className="text-base md:text-lg text-slate-500 max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
-              Akses informasi komprehensif mulai dari pengembangan diri, produktivitas harian, hingga manajemen jaminan sosial dalam satu portal profesional.
+              Sumber informasi resmi dan terintegrasi untuk seluruh kebutuhan administrasi, produktivitas, dan pengembangan diri Anda selama berkarir di SWAPRO.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
               <button 

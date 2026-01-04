@@ -25,7 +25,8 @@ import {
   Pie,
   Cell,
   BarChart,
-  Bar
+  Bar,
+  LabelList
 } from 'recharts';
 
 interface DashboardProps {
@@ -38,7 +39,7 @@ const ChartCard: React.FC<{ title: string; icon: React.ReactNode; children: Reac
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">{icon}</div>
             <h3 className="text-xl font-bold text-slate-800">{title}</h3>
         </div>
-        <div className="h-[250px]">{children}</div>
+        <div className="h-[250px] min-w-0 relative">{children}</div>
     </div>
 );
 
@@ -54,6 +55,35 @@ const CustomPieTooltip = ({ active, payload }: any) => {
     }
     return null;
 };
+
+// Custom label renderer for Pie Charts to show percentage inside slices
+const RADIAN = Math.PI / 180;
+const renderCustomizedPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+  if (percent < 0.05) return null; // Don't render label for very small slices
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="14" fontWeight="bold">
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+
+const CustomBarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+          <p className="font-bold">{`${label}`}</p>
+          <p className="text-sm text-slate-600">{`Jumlah : ${payload[0].value}`}</p>
+        </div>
+      );
+    }
+    return null;
+};
+
 
 const Dashboard: React.FC<DashboardProps> = ({ state }) => {
   const { employees, clients } = state;
@@ -133,8 +163,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
 
   const demographicData = useMemo(() => {
     // Gender Data
-    const gender = { 'Laki-laki': 0, 'Perempuan': 0 };
-    activeEmployees.forEach(e => gender[e.gender]++);
+    const gender: { [key: string]: number } = { 'Laki-laki': 0, 'Perempuan': 0 };
+    activeEmployees.forEach(e => {
+        if (e.gender === 'Laki-laki' || e.gender === 'Perempuan') {
+            gender[e.gender]++;
+        }
+    });
     const genderData = Object.entries(gender).map(([name, value]) => ({ name, value }));
     const GENDER_COLORS = ['#3b82f6', '#ec4899'];
 
@@ -151,23 +185,26 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
         else if (age <= 45) ageGroups['36 - 45']++;
         else ageGroups['> 45']++;
     });
-    const ageData = Object.entries(ageGroups).map(([name, value]) => ({ name, value }));
-    const AGE_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
+    const ageData = Object.entries(ageGroups).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+    const AGE_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#64748b'];
 
     // Education Data
     const educationLevels: Record<string, number> = { 'SMA/SMK': 0, D3: 0, S1: 0, S2: 0, S3: 0, Lainnya: 0, 'Belum Diisi': 0};
     activeEmployees.forEach(e => {
-        if (e.lastEducation) {
+        if (e.lastEducation && educationLevels.hasOwnProperty(e.lastEducation)) {
             educationLevels[e.lastEducation]++;
         } else {
             educationLevels['Belum Diisi']++;
         }
     });
     const educationData = Object.entries(educationLevels)
-        .map(([name, value]) => ({ name, Jumlah: value }))
-        .filter(item => item.Jumlah > 0);
+        .map(([name, value]) => ({ name, value }))
+        .filter(item => item.value > 0)
+        .sort((a,b) => a.value - b.value);
 
-    return { genderData, GENDER_COLORS, ageData, AGE_COLORS, educationData };
+    const EDUCATION_COLORS = ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb'];
+
+    return { genderData, GENDER_COLORS, ageData, AGE_COLORS, educationData, EDUCATION_COLORS };
 
   }, [activeEmployees]);
 
@@ -253,7 +290,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
                   ))}
               </select>
            </div>
-           <div className="h-[280px] md:h-[350px] min-w-0">
+           <div className="h-[280px] md:h-[350px] min-w-0 relative">
              <ResponsiveContainer width="100%" height="100%">
                <LineChart data={monthlyTrendChartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -322,7 +359,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
             <ChartCard title="Komposisi Gender" icon={<PieChartIcon className="w-6 h-6" />}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                        <Pie data={demographicData.genderData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                        <Pie 
+                            data={demographicData.genderData} 
+                            dataKey="value" 
+                            nameKey="name" 
+                            cx="50%" 
+                            cy="50%" 
+                            outerRadius={80} 
+                            labelLine={false}
+                            label={renderCustomizedPieLabel}
+                        >
                             {demographicData.genderData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={demographicData.GENDER_COLORS[index % demographicData.GENDER_COLORS.length]} />
                             ))}
@@ -335,7 +381,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
             <ChartCard title="Distribusi Usia" icon={<Cake className="w-6 h-6" />}>
                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                        <Pie data={demographicData.ageData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                        <Pie 
+                            data={demographicData.ageData} 
+                            dataKey="value" 
+                            nameKey="name" 
+                            cx="50%" 
+                            cy="50%" 
+                            outerRadius={80} 
+                            labelLine={false}
+                            label={renderCustomizedPieLabel}
+                        >
                              {demographicData.ageData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={demographicData.AGE_COLORS[index % demographicData.AGE_COLORS.length]} />
                             ))}
@@ -347,12 +402,28 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
             </ChartCard>
             <ChartCard title="Tingkat Pendidikan" icon={<GraduationCap className="w-6 h-6" />}>
                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={demographicData.educationData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <BarChart
+                        layout="vertical"
+                        data={demographicData.educationData}
+                        margin={{ top: 5, right: 50, left: 10, bottom: 5 }}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                         <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <Tooltip cursor={{fill: '#f9fafb'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Bar dataKey="Jumlah" fill="#3b82f6" barSize={20} radius={[0, 4, 4, 0]} />
+                        <YAxis
+                            type="category"
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 12, fill: '#64748B', fontWeight: 'bold' }}
+                            width={80}
+                        />
+                        <Tooltip cursor={{ fill: '#f9fafb' }} content={<CustomBarTooltip />} />
+                        <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+                            <LabelList dataKey="value" position="right" fill="#1e293b" fontSize={12} fontWeight="bold" />
+                            {demographicData.educationData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={demographicData.EDUCATION_COLORS[index % demographicData.EDUCATION_COLORS.length]} />
+                            ))}
+                        </Bar>
                     </BarChart>
                 </ResponsiveContainer>
             </ChartCard>

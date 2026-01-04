@@ -388,11 +388,11 @@ export const EmployeeModal: React.FC<{
 
     // --- RENDER FUNCTIONS FOR VIEW MODE ---
     const renderInfoItem = (icon: React.ReactNode, label: string, value: any) => (
-        <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0 text-slate-400 mt-0.5">{icon}</div>
+        <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0 text-slate-400 mt-1">{icon}</div>
             <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">{label}</p>
-                <p className="text-base font-bold text-slate-800 break-words">{value || '-'}</p>
+                <p className="text-sm font-medium text-slate-500">{label}</p>
+                <p className="text-base font-semibold text-slate-800 break-words">{value || '-'}</p>
             </div>
         </div>
     );
@@ -414,6 +414,15 @@ export const EmployeeModal: React.FC<{
         )
     );
     
+    const DetailSection: React.FC<{ title: string; children: React.ReactNode; grid?: boolean }> = ({ title, children, grid = true }) => (
+      <div className="mb-8 last:mb-0">
+        <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase mb-4">{title}</h4>
+        <div className={grid ? "grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5" : "space-y-3"}>
+          {children}
+        </div>
+      </div>
+    );
+
     const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
 
     if (isViewMode && employeeData) {
@@ -456,50 +465,58 @@ export const EmployeeModal: React.FC<{
                     </div>
 
                     {/* Content */}
-                    <div className="p-5 md:p-6 overflow-y-auto bg-white flex-1">
+                    <div className="p-6 md:p-8 overflow-y-auto bg-white flex-1">
                         {activeTab === 'profil' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <DetailSection title="Data Pribadi">
                                 {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK KTP", employeeData.ktpId)}
+                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK SWAPRO", employeeData.swaproId)}
                                 {renderInfoItem(<Phone className="w-4 h-4" />, "No. WhatsApp", employeeData.whatsapp)}
                                 {renderInfoItem(<UserIcon className="w-4 h-4" />, "Jenis Kelamin", employeeData.gender)}
                                 {renderInfoItem(<Cake className="w-4 h-4" />, "Tanggal Lahir", employeeData.birthDate ? new Date(employeeData.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-')}
                                 {renderInfoItem(<GraduationCap className="w-4 h-4" />, "Pendidikan Terakhir", employeeData.lastEducation)}
                                 {renderInfoItem(<CreditCard className="w-4 h-4" />, "NPWP", employeeData.npwp)}
-                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK SWAPRO", employeeData.swaproId)}
-                            </div>
+                            </DetailSection>
                         )}
                         {activeTab === 'pekerjaan' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employeeData.clientId || ''))}
-                                {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employeeData.position)}
-                                {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employeeData.branch)}
-                                {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Join", employeeData.joinDate ? new Date(employeeData.joinDate).toLocaleDateString('id-ID') : '-')}
-                                {renderInfoItem(<Calendar className="w-4 h-4" />, "End of Contract", employeeData.endDate ? new Date(employeeData.endDate).toLocaleDateString('id-ID') : '-')}
-                                {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Resign", employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID') : '-')}
-                                {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employeeData.contractNumber)}
-                                <div className="md:col-span-2">
-                                  {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan SP", employeeData.disciplinaryActions)}
-                                </div>
-                            </div>
+                            <>
+                                <DetailSection title="Informasi Posisi">
+                                    {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employeeData.clientId || ''))}
+                                    {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employeeData.position)}
+                                    {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employeeData.branch)}
+                                </DetailSection>
+                                <DetailSection title="Status & Kontrak">
+                                    {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Join", employeeData.joinDate ? new Date(employeeData.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
+                                    {renderInfoItem(<Calendar className="w-4 h-4" />, "End of Contract", employeeData.endDate ? new Date(employeeData.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
+                                    {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Resign", employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
+                                    {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employeeData.contractNumber)}
+                                    <div className="md:col-span-2">
+                                      {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan Surat Peringatan (SP)", employeeData.disciplinaryActions)}
+                                    </div>
+                                </DetailSection>
+                            </>
                         )}
                          {activeTab === 'finansial' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employeeData.bankAccount?.bankName)}
-                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employeeData.bankAccount?.number)}
-                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "Nama Rekening", employeeData.bankAccount?.holderName)}
-                                {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS TK", employeeData.bpjs?.ketenagakerjaan)}
-                                {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS KS", employeeData.bpjs?.kesehatan)}
-                            </div>
+                             <>
+                                <DetailSection title="Rekening Bank">
+                                    {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employeeData.bankAccount?.bankName)}
+                                    {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employeeData.bankAccount?.number)}
+                                    {renderInfoItem(<UserIcon className="w-4 h-4" />, "Nama Pemilik Rekening", employeeData.bankAccount?.holderName)}
+                                </DetailSection>
+                                <DetailSection title="Jaminan Sosial">
+                                    {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS Ketenagakerjaan", employeeData.bpjs?.ketenagakerjaan)}
+                                    {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS Kesehatan", employeeData.bpjs?.kesehatan)}
+                                </DetailSection>
+                            </>
                         )}
                         {activeTab === 'dokumen' && (
-                            <div className="space-y-4 max-w-full">
+                            <DetailSection title="Dokumen Tersimpan" grid={false}>
                                 {renderDocumentLink("PKWT New Hire", employeeData.documents?.pkwtNewHire)}
                                 {renderDocumentLink("PKWT Perpanjangan", employeeData.documents?.pkwtExtension)}
-                                {renderDocumentLink("Surat SP", employeeData.documents?.spLetter)}
-                            </div>
+                                {renderDocumentLink("Surat Peringatan (SP)", employeeData.documents?.spLetter)}
+                            </DetailSection>
                         )}
                         {activeTab === 'slip gaji' && (
-                            <div className="space-y-3">
+                            <DetailSection title={`Histori Slip Gaji (${employeePayslips.length})`} grid={false}>
                                 {employeePayslips.length > 0 ? (
                                     employeePayslips.map(slip => (
                                         <a key={slip.id} href={slip.fileUrl} download={`slip-gaji-${employeeData.fullName}-${slip.period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
@@ -513,7 +530,7 @@ export const EmployeeModal: React.FC<{
                                 ) : (
                                     <p className="text-center text-base text-slate-400 italic py-8">Belum ada data slip gaji untuk karyawan ini.</p>
                                 )}
-                            </div>
+                            </DetailSection>
                         )}
                     </div>
                      <div className="p-2 flex md:hidden items-center justify-around gap-2 bg-slate-100 border-t border-gray-200">
