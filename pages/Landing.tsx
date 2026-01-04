@@ -32,6 +32,7 @@ import {
   Link,
   X,
 } from 'lucide-react';
+import Marquee from '../components/Marquee';
 
 // --- DATA KONTEN MODAL ---
 interface ModalContent {
@@ -214,28 +215,81 @@ const InfoModal: React.FC<{ content: ModalContent; onClose: () => void; }> = ({ 
   );
 };
 
-// --- Tombol WhatsApp Mengambang ---
-const FloatingWhatsAppButton: React.FC = () => {
-    const phoneNumber = '6285890285218';
-    const whatsappUrl = `https://wa.me/${phoneNumber}`;
-  
+// --- Tombol Media Sosial Mengambang ---
+const FloatingSocialButtons: React.FC = () => {
+    const socialLinks = [
+        {
+            name: 'Instagram',
+            url: 'https://www.instagram.com/swaprokarir?igsh=MXdvOW56ZjN6ZXJrMA==',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+            ),
+            bgClass: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
+            shadowClass: 'shadow-pink-500/30'
+        },
+        {
+            name: 'TikTok',
+            url: 'https://www.tiktok.com/@swaprointernational_?_r=1&_t=ZS-91vBGI75XfE',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="currentColor" className="w-7 h-7">
+                    <path d="M24,4H6C4.895,4,4,4.895,4,6v18c0,1.105,0.895,2,2,2h18c1.105,0,2-0.895,2-2V6C26,4.895,25.104,4,24,4z M22.689,13.474 c-0.13,0.012-0.261,0.02-0.393,0.02c-1.495,0-2.809-0.768-3.574-1.931c0,3.049,0,6.519,0,6.577c0,2.685-2.177,4.861-4.861,4.861 C11.177,23,9,20.823,9,18.139c0-2.685,2.177-4.861,4.861-4.861c0.102,0,0.201,0.009,0.3,0.015v2.396c-0.1-0.012-0.197-0.03-0.3-0.03 c-1.37,0-2.481,1.111-2.481,2.481s1.11,2.481,2.481,2.481c1.371,0,2.581-1.08,2.581-2.45c0-0.055,0.024-11.17,0.024-11.17h2.289 c0.215,2.047,1.868,3.663,3.934,3.811V13.474z"></path>
+                 </svg>
+            ),
+            bgClass: 'bg-black',
+            shadowClass: 'shadow-slate-500/30'
+        },
+        {
+            name: 'WhatsApp',
+            url: 'https://wa.me/6285890285218',
+            icon: (
+                 <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="w-7 h-7"
+                    fill="currentColor"
+                >
+                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22C13.66,22 15.25,21.5 16.63,20.67L22,22L20.67,16.63C21.5,15.25 22,13.66 22,12A10,10 0 0,0 12,2M16.75,13.96C17,14.26 17,14.86 16.8,15.46C16.6,16.06 15.9,16.56 15.3,16.56C14.8,16.56 12.7,16.06 11.2,14.56C9.3,12.66 8.1,10.26 8,9.86C7.9,9.46 8.5,8.86 8.7,8.66C8.9,8.46 9.1,8.26 9.3,8.26C9.5,8.26 9.7,8.26 9.8,8.46C10,8.66 10.4,9.36 10.5,9.56C10.6,9.76 10.6,9.96 10.5,10.06C10.4,10.16 10.3,10.26 10.2,10.36C10.1,10.46 9.9,10.66 9.8,10.76C9.7,10.86 9.6,10.96 9.7,11.16C9.8,11.36 10.3,12.16 11.1,12.86C12.1,13.76 12.8,14.06 13,14.16C13.2,14.26 13.3,14.26 13.4,14.06C13.5,13.86 13.7,13.66 13.8,13.46C14,13.26 14.2,13.16 14.4,13.16C14.6,13.16 15.5,13.56 15.8,13.66C16.1,13.76 16.5,13.86 16.75,13.96Z" />
+                </svg>
+            ),
+            bgClass: 'bg-[#25D366] hover:bg-green-600',
+            shadowClass: 'shadow-green-500/30'
+        }
+    ];
+
     return (
-      <a
-        href={whatsappUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Hubungi kami di WhatsApp"
-        className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 transform transition-all duration-300 hover:scale-110 hover:shadow-lg hover:bg-green-600 active:scale-95"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          className="w-7 h-7 md:w-8 md:h-8"
-          fill="currentColor"
-        >
-          <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22C13.66,22 15.25,21.5 16.63,20.67L22,22L20.67,16.63C21.5,15.25 22,13.66 22,12A10,10 0 0,0 12,2M16.75,13.96C17,14.26 17,14.86 16.8,15.46C16.6,16.06 15.9,16.56 15.3,16.56C14.8,16.56 12.7,16.06 11.2,14.56C9.3,12.66 8.1,10.26 8,9.86C7.9,9.46 8.5,8.86 8.7,8.66C8.9,8.46 9.1,8.26 9.3,8.26C9.5,8.26 9.7,8.26 9.8,8.46C10,8.66 10.4,9.36 10.5,9.56C10.6,9.76 10.6,9.96 10.5,10.06C10.4,10.16 10.3,10.26 10.2,10.36C10.1,10.46 9.9,10.66 9.8,10.76C9.7,10.86 9.6,10.96 9.7,11.16C9.8,11.36 10.3,12.16 11.1,12.86C12.1,13.76 12.8,14.06 13,14.16C13.2,14.26 13.3,14.26 13.4,14.06C13.5,13.86 13.7,13.66 13.8,13.46C14,13.26 14.2,13.16 14.4,13.16C14.6,13.16 15.5,13.56 15.8,13.66C16.1,13.76 16.5,13.86 16.75,13.96Z" />
-        </svg>
-      </a>
+        <>
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center space-y-3">
+                {socialLinks.map((link, index) => (
+                    <a
+                        key={link.name}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Kunjungi ${link.name} kami`}
+                        className={`text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 animate-slide-in ${link.bgClass} ${link.shadowClass}`}
+                        style={{ animationDelay: `${150 * index}ms` }}
+                    >
+                       {link.icon}
+                    </a>
+                ))}
+            </div>
+            <style>{`
+                @keyframes slideInFromBottom {
+                    from {
+                        opacity: 0;
+                        transform: translateY(25px) scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+                .animate-slide-in {
+                    opacity: 0;
+                    animation: slideInFromBottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+                }
+            `}</style>
+        </>
     );
 };
 
@@ -252,7 +306,7 @@ const Landing: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDFEFE] font-['Inter'] selection:bg-blue-100 selection:text-blue-700">
       {modalContent && <InfoModal content={modalContent} onClose={() => setModalContent(null)} />}
-      <FloatingWhatsAppButton />
+      <FloatingSocialButtons />
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/70 backdrop-blur-md border-b border-slate-100 z-50">
         <div className="max-w-6xl mx-auto px-6">
@@ -273,7 +327,7 @@ const Landing: React.FC = () => {
           </div>
         </div>
       </nav>
-
+      
       {/* Hero Section with Visual Character Representation */}
       <section className="pt-24 pb-16 px-6 overflow-hidden">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -334,6 +388,8 @@ const Landing: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <Marquee />
 
       {/* Mindset & Productivity (Compact Grid) */}
       <section ref={educationSectionRef} className="py-12 px-6 max-w-6xl mx-auto">
@@ -444,133 +500,91 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Digital Access (JMO & JKN) */}
-      <section className="py-12 px-6 max-w-6xl mx-auto pb-24">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Panduan Akses Digital</h2>
-          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">Aktivasi mandiri akun jaminan sosial</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* JMO CARD */}
-          <button onClick={() => setModalContent(EDUCATION_CONTENT.jmo)} className="w-full text-left bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:border-blue-200 transition-colors">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="bg-blue-600 p-2.5 rounded-2xl text-white shadow-lg shadow-blue-500/20"><Smartphone className="w-5 h-5" /></div>
-              <div>
-                <h4 className="font-black text-slate-800 text-base">Aplikasi JMO</h4>
-                <p className="text-xs text-blue-600 font-bold uppercase">Ketenagakerjaan</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <DigitalStep num="1" title="Unduh" desc="Instal JMO di Google Play Store atau App Store." icon={<Download className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="2" title="Buat Akun" desc="Klik 'Buat Akun Baru' (jika pengguna baru)." icon={<UserPlus className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="3" title="Validasi Data" desc="Input NIK, Nama & Tanggal Lahir sesuai KTP." icon={<FileText className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="4" title="Otentikasi" desc="Masukkan kode OTP dari Email & No. HP aktif." icon={<Fingerprint className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="5" title="Tambah Kartu" desc="Jika sudah punya akun, masuk ke 'Profil' untuk menambahkan No. KPJ baru." icon={<Link className="w-3.5 h-3.5"/>} />
-            </div>
-          </button>
-
-          {/* JKN CARD */}
-          <button onClick={() => setModalContent(EDUCATION_CONTENT.jkn)} className="w-full text-left bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:border-emerald-200 transition-colors">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="bg-emerald-600 p-2.5 rounded-2xl text-white shadow-lg shadow-emerald-500/20"><Activity className="w-5 h-5" /></div>
-              <div>
-                <h4 className="font-black text-slate-800 text-base">Mobile JKN</h4>
-                <p className="text-xs text-emerald-600 font-bold uppercase">BPJS Kesehatan</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <DigitalStep num="1" title="Daftar" desc="Pilih 'Pendaftaran Pengguna Mobile' di menu utama." icon={<UserPlus className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="2" title="Identitas" desc="Input NIK atau 13 digit No. Kartu BPJS." icon={<CreditCard className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="3" title="Verifikasi" desc="Input Captcha & verifikasi SMS (siapkan pulsa)." icon={<MessageSquare className="w-3.5 h-3.5"/>} />
-              <DigitalStep num="4" title="Set Sandi" desc="Buat kata sandi 6 digit untuk akses kartu digital." icon={<Fingerprint className="w-3.5 h-3.5"/>} />
-            </div>
-          </button>
+      <section className="py-12 px-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DigitalAccessCard
+            title="Aplikasi JMO"
+            description="Cek saldo JHT, klaim dana, dan unduh kartu digital BPJS Ketenagakerjaan Anda."
+            logo="https://i.imgur.com/kRyWzNX.png"
+            color="blue"
+            onClick={() => setModalContent(EDUCATION_CONTENT.jmo)}
+          />
+          <DigitalAccessCard
+            title="Mobile JKN"
+            description="Antrean online, cek status KIS, dan akses layanan BPJS Kesehatan dengan mudah."
+            logo="https://i.imgur.com/fOML1ll.png"
+            color="emerald"
+            onClick={() => setModalContent(EDUCATION_CONTENT.jkn)}
+          />
         </div>
       </section>
-      
+
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-slate-100 bg-white">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-8">
-          <div>
-            <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+      <footer className="bg-slate-900 text-slate-400">
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <div className="flex items-center space-x-3 mb-4">
               <img src="https://i.imgur.com/P7t1bQy.png" alt="SIM Group Logo" className="h-7" />
-              <span className="font-extrabold text-slate-900 tracking-tight text-base">HALLO SWAPRO</span>
-            </div>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">© 2025 PT SWAPRO INTERNATIONAL</p>
+              <span className="font-extrabold text-lg text-white tracking-tight">HALLO SWAPRO</span>
           </div>
-          <div className="flex items-center space-x-4">
-              <img 
-                src="https://i.imgur.com/Lf2IC1Z.png" 
-                alt="Swakarya Logo - PIC Login" 
-                title="PIC/Admin Login"
-                className="h-7 opacity-80 cursor-pointer hover:opacity-100 transition-opacity"
-                onClick={() => navigate('/admin')}
-              />
-          </div>
+          <p className="text-sm">© {new Date().getFullYear()} PT. Swakarya Insan Mandiri. All rights reserved.</p>
         </div>
       </footer>
     </div>
   );
 };
 
-/* --- MINI COMPONENTS --- */
 
-const EduMiniCard = ({ icon, title, desc, onClick }: { icon: React.ReactNode, title: string, desc: string, onClick: () => void }) => (
-  <button onClick={onClick} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm group hover:border-blue-200 transition-all text-left">
-    <div className="mb-2">{icon}</div>
-    <h3 className="text-sm font-black text-slate-800 mb-1">{title}</h3>
-    <p className="text-sm text-slate-500 leading-tight font-medium">{desc}</p>
-  </button>
-);
-
-const BenefitRow = ({ title, desc, onClick }: { title: string, desc: string, onClick: () => void }) => (
-  <button onClick={onClick} className="w-full flex items-start space-x-3 p-3 bg-slate-50 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all text-left">
-    <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 shadow-xs">
-      <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-    </div>
-    <div>
-      <h4 className="text-sm font-black text-slate-800 leading-none mb-1">{title}</h4>
-      <p className="text-sm text-slate-500 font-medium leading-tight">{desc}</p>
-    </div>
-  </button>
-);
-
-const DigitalStep = ({ num, title, desc, icon }: { num: string, title: string, desc: string, icon: React.ReactNode }) => (
-  <div className="flex items-start space-x-4">
-    <div className="w-7 h-7 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-black shrink-0">{num}</div>
-    <div>
-      <div className="flex items-center space-x-2 mb-0.5">
-        <span className="text-slate-400">{icon}</span>
-        <h5 className="text-sm font-black text-slate-800 leading-none uppercase tracking-tight">{title}</h5>
+// --- SUB-KOMPONEN LANDING PAGE ---
+const EduMiniCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; onClick: () => void; }> = ({ icon, title, desc, onClick }) => (
+  <button onClick={onClick} className="bg-white rounded-2xl p-4 text-left shadow-sm hover:shadow-lg transition-shadow border border-slate-100 group">
+    <div className="flex items-center justify-between">
+      <div className="p-1.5 bg-slate-100 rounded-lg">{icon}</div>
+      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+        <ChevronRight className="w-3 h-3 text-slate-400 group-hover:text-white" />
       </div>
-      <p className="text-sm text-slate-500 font-medium leading-tight">{desc}</p>
     </div>
-  </div>
+    <h3 className="font-bold text-sm text-slate-800 mt-3">{title}</h3>
+    <p className="text-xs text-slate-500">{desc}</p>
+  </button>
 );
 
-const TaxInfoRow = ({ label, status }: { label: string, status: string }) => (
-  <div className="flex justify-between items-center py-2.5 border-b border-white/5 last:border-0">
-    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-    <span className="text-xs font-black text-amber-500">{status}</span>
-  </div>
-);
-
-// This component is no longer used in the main landing flow but kept for potential future use.
-const RoleCard = ({ icon, title, desc, onClick, color }: { icon: React.ReactNode, title: string, desc: string, onClick: () => void, color: string }) => (
-  <button 
-    onClick={onClick}
-    className="group p-6 bg-white border border-slate-200 rounded-[28px] text-left hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-300 active:scale-[0.98]"
-  >
-    <div className={`mb-5 bg-slate-50 w-fit p-3.5 rounded-2xl border border-slate-100 group-hover:bg-${color === 'blue' ? 'blue' : 'emerald'}-600 group-hover:text-white transition-colors`}>
-      {icon}
+const BenefitRow: React.FC<{ title: string; desc: string; onClick: () => void; }> = ({ title, desc, onClick }) => (
+  <button onClick={onClick} className="w-full flex items-center justify-between text-left p-3 rounded-xl hover:bg-slate-50 transition-colors group">
+    <div className="min-w-0">
+      <h3 className="font-bold text-base text-slate-800">{title}</h3>
+      <p className="text-sm text-slate-500 truncate pr-4">{desc}</p>
     </div>
-    <h3 className="text-base font-black text-slate-900 mb-1.5 uppercase tracking-tight">{title}</h3>
-    <p className="text-[12px] text-slate-500 font-medium leading-relaxed mb-6">{desc}</p>
-    <div className={`flex items-center text-[11px] font-black uppercase tracking-widest ${color === 'blue' ? 'text-blue-600' : 'text-emerald-600'} group-hover:translate-x-1 transition-transform`}>
-      <span>Akses Sekarang</span>
-      <ChevronRight className="w-3.5 h-3.5 ml-1" />
+    <div className="w-8 h-8 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white" />
     </div>
   </button>
 );
+
+const TaxInfoRow: React.FC<{ label: string; status: string; }> = ({ label, status }) => (
+  <div className="flex items-center justify-between text-sm border-b border-white/10 pb-2">
+    <span className="font-semibold text-white">{label}</span>
+    <span className="text-slate-400 text-right">{status}</span>
+  </div>
+);
+
+const DigitalAccessCard: React.FC<{ title: string; description: string; logo: string; color: 'blue' | 'emerald'; onClick: () => void; }> = ({ title, description, logo, color, onClick }) => {
+  const colors = {
+    blue: { bg: 'bg-blue-50', hoverBg: 'hover:bg-blue-100', text: 'text-blue-800' },
+    emerald: { bg: 'bg-emerald-50', hoverBg: 'hover:bg-emerald-100', text: 'text-emerald-800' }
+  };
+  return (
+    <button onClick={onClick} className={`w-full p-6 ${colors[color].bg} rounded-3xl text-left transition-colors ${colors[color].hoverBg}`}>
+      <div className="flex items-center justify-between mb-4">
+        <img src={logo} alt={`${title} Logo`} className="h-7" />
+        <div className="w-8 h-8 flex-shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm">
+          <Link className="w-4 h-4 text-slate-500" />
+        </div>
+      </div>
+      <h3 className={`font-bold text-lg ${colors[color].text}`}>{title}</h3>
+      <p className="text-sm text-slate-500 mt-1">{description}</p>
+    </button>
+  );
+};
+
 
 export default Landing;
