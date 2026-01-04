@@ -39,6 +39,10 @@ interface ModalContent {
   icon: React.ReactNode;
   title: string;
   description: string[];
+  steps?: {
+      title: string;
+      items: string[];
+  }[];
   color: string;
 }
 
@@ -168,6 +172,30 @@ const EDUCATION_CONTENT: Record<string, ModalContent> = {
             "JMO (Jamsostek Mobile) adalah aplikasi resmi dari BPJS Ketenagakerjaan. Melalui aplikasi ini, Anda dapat mengecek saldo JHT, melihat status kepesertaan, mengunduh kartu digital, hingga mengajukan klaim JHT secara online.",
             "Fitur unggulannya adalah proses klaim JHT yang lebih cepat (e-claim) dan fitur pelacakan status klaim secara real-time."
         ],
+        steps: [
+            {
+                title: "Cara Pendaftaran Akun Baru",
+                items: [
+                    "Unduh aplikasi JMO dari Google Play Store atau App Store.",
+                    "Buka aplikasi, lalu pilih 'Buat Akun Baru'.",
+                    "Pilih 'Ya, Saya Sudah Daftar' sebagai peserta, lalu pilih jenis kepesertaan 'Penerima Upah (PU)'.",
+                    "Isi data diri dengan benar: NIK, Nomor KPJ, Nama Lengkap, dan Tanggal Lahir.",
+                    "Lakukan verifikasi akun melalui email dan nomor HP yang aktif.",
+                    "Buat kata sandi untuk akun Anda dan selesaikan pendaftaran."
+                ]
+            },
+            {
+                title: "Cara Menambah KPJ Baru (jika sudah punya akun)",
+                items: [
+                    "Login ke aplikasi JMO Anda.",
+                    "Masuk ke menu 'Profil Saya'.",
+                    "Pilih opsi 'Tambah KPJ'.",
+                    "Masukkan Nomor KPJ baru Anda beserta Nama Lengkap.",
+                    "Lakukan verifikasi biometrik (wajah) sesuai instruksi.",
+                    "KPJ baru Anda akan otomatis ditambahkan ke akun."
+                ]
+            }
+        ]
     },
     jkn: {
         icon: <Activity className="w-6 h-6" />, title: 'Aplikasi Mobile JKN', color: 'emerald',
@@ -175,6 +203,19 @@ const EDUCATION_CONTENT: Record<string, ModalContent> = {
             "Mobile JKN adalah aplikasi resmi dari BPJS Kesehatan. Aplikasi ini memungkinkan Anda untuk mengecek status kepesertaan, melihat kartu KIS digital, mengubah data peserta, dan mendaftar antrean online di FKTP atau rumah sakit.",
             "Fitur antrean online sangat membantu untuk mengurangi waktu tunggu di fasilitas kesehatan, membuat pengalaman berobat menjadi lebih efisien."
         ],
+        steps: [
+             {
+                title: "Cara Pendaftaran Akun",
+                items: [
+                    "Unduh aplikasi Mobile JKN dari Google Play Store atau App Store.",
+                    "Buka aplikasi, pilih 'Daftar', lalu 'Pendaftaran Peserta Baru'.",
+                    "Baca dan setujui syarat & ketentuan.",
+                    "Masukkan NIK Anda dan kode captcha, lalu data Anda akan muncul.",
+                    "Lengkapi data tambahan yang diperlukan, termasuk memilih Faskes Tingkat Pertama (FKTP).",
+                    "Verifikasi akun melalui kode yang dikirimkan ke email aktif Anda."
+                ]
+            }
+        ]
     },
 };
 
@@ -191,8 +232,8 @@ const InfoModal: React.FC<{ content: ModalContent; onClose: () => void; }> = ({ 
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-[fadeIn_0.3s_ease-out]" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden animate-[scaleIn_0.3s_ease-out]" onClick={e => e.stopPropagation()}>
-        <div className="p-6 md:p-8">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 animate-[scaleIn_0.3s_ease-out] flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+        <div className="p-6 md:p-8 overflow-y-auto">
           <div className="flex items-start space-x-4">
             <div className={`p-3 rounded-2xl ${selectedColor.bg} ${selectedColor.text}`}>
               {content.icon}
@@ -203,9 +244,17 @@ const InfoModal: React.FC<{ content: ModalContent; onClose: () => void; }> = ({ 
           </div>
           <div className="mt-6 space-y-3 text-base text-slate-600 leading-relaxed font-medium">
             {content.description.map((p, i) => <p key={i}>{p}</p>)}
+            {content.steps && content.steps.map((stepSection, i) => (
+                <div key={i} className="mt-5">
+                    <h4 className="font-bold text-slate-900 mb-2">{stepSection.title}</h4>
+                    <ol className="space-y-2 list-decimal list-inside text-slate-600">
+                        {stepSection.items.map((item, j) => <li key={j}>{item}</li>)}
+                    </ol>
+                </div>
+            ))}
           </div>
         </div>
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end flex-shrink-0">
           <button onClick={onClose} className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-700 transition active:scale-95">
             Tutup
           </button>
@@ -231,7 +280,7 @@ const FloatingSocialButtons: React.FC = () => {
             name: 'TikTok',
             url: 'https://www.tiktok.com/@swaprointernational_?_r=1&_t=ZS-91vBGI75XfE',
             icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="currentColor" className="w-7 h-7">
+                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 30 30" fill="currentColor" className="w-7 h-7">
                     <path d="M24,4H6C4.895,4,4,4.895,4,6v18c0,1.105,0.895,2,2,2h18c1.105,0,2-0.895,2-2V6C26,4.895,25.104,4,24,4z M22.689,13.474 c-0.13,0.012-0.261,0.02-0.393,0.02c-1.495,0-2.809-0.768-3.574-1.931c0,3.049,0,6.519,0,6.577c0,2.685-2.177,4.861-4.861,4.861 C11.177,23,9,20.823,9,18.139c0-2.685,2.177-4.861,4.861-4.861c0.102,0,0.201,0.009,0.3,0.015v2.396c-0.1-0.012-0.197-0.03-0.3-0.03 c-1.37,0-2.481,1.111-2.481,2.481s1.11,2.481,2.481,2.481c1.371,0,2.581-1.08,2.581-2.45c0-0.055,0.024-11.17,0.024-11.17h2.289 c0.215,2.047,1.868,3.663,3.934,3.811V13.474z"></path>
                  </svg>
             ),
@@ -499,34 +548,51 @@ const Landing: React.FC = () => {
         </button>
       </section>
 
-      {/* Digital Access (JMO & JKN) */}
-      <section className="py-12 px-6 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <DigitalAccessCard
-            title="Aplikasi JMO"
-            description="Cek saldo JHT, klaim dana, dan unduh kartu digital BPJS Ketenagakerjaan Anda."
-            logo="https://i.imgur.com/kRyWzNX.png"
-            color="blue"
-            onClick={() => setModalContent(EDUCATION_CONTENT.jmo)}
-          />
-          <DigitalAccessCard
-            title="Mobile JKN"
-            description="Antrean online, cek status KIS, dan akses layanan BPJS Kesehatan dengan mudah."
-            logo="https://i.imgur.com/fOML1ll.png"
-            color="emerald"
-            onClick={() => setModalContent(EDUCATION_CONTENT.jkn)}
-          />
+      {/* Panduan Akses Digital */}
+      <section className="py-16 px-6 bg-slate-50 border-y border-slate-200/50">
+        <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Aplikasi Jaminan Sosial</h2>
+                <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-2">AKSES MANFAAT ANDA DENGAN MUDAH</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <DigitalAppCard 
+                    icon={<Smartphone className="w-8 h-8" />}
+                    title="JMO Mobile"
+                    subtitle="BPJS Ketenagakerjaan"
+                    bgColorClass="from-blue-500 to-indigo-600"
+                    onClick={() => setModalContent(EDUCATION_CONTENT.jmo)}
+                />
+                <DigitalAppCard 
+                    icon={<Activity className="w-8 h-8" />}
+                    title="Mobile JKN"
+                    subtitle="BPJS Kesehatan"
+                    bgColorClass="from-emerald-500 to-green-600"
+                    onClick={() => setModalContent(EDUCATION_CONTENT.jkn)}
+                />
+            </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex items-center space-x-3 mb-4">
-              <img src="https://i.imgur.com/P7t1bQy.png" alt="SIM Group Logo" className="h-7" />
-              <span className="font-extrabold text-lg text-white tracking-tight">HALLO SWAPRO</span>
+      <footer className="bg-white border-t border-slate-200">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                  <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-7" />
+                  <span className="font-extrabold text-lg text-slate-900 tracking-tight">HALLO SWAPRO</span>
+              </div>
+              <p className="text-sm text-slate-500 font-medium">© 2025 PT SWAPRO INTERNATIONAL</p>
+            </div>
+            <button 
+              onClick={() => navigate('/admin')}
+              className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+              aria-label="Login PIC / Admin"
+            >
+              <img src="https://i.imgur.com/Lf2IC1Z.png" alt="Admin Login" className="w-8 h-8" />
+            </button>
           </div>
-          <p className="text-sm">© {new Date().getFullYear()} PT. Swakarya Insan Mandiri. All rights reserved.</p>
         </div>
       </footer>
     </div>
@@ -535,6 +601,37 @@ const Landing: React.FC = () => {
 
 
 // --- SUB-KOMPONEN LANDING PAGE ---
+const DigitalAppCard: React.FC<{
+    icon: React.ReactNode;
+    title: string;
+    subtitle: string;
+    bgColorClass: string;
+    onClick: () => void;
+}> = ({ icon, title, subtitle, bgColorClass, onClick }) => (
+    <button 
+        onClick={onClick}
+        className={`relative p-8 rounded-3xl text-white text-left w-full overflow-hidden transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-100 bg-gradient-to-br ${bgColorClass}`}
+    >
+        <div className="relative z-10 flex flex-col h-full">
+            <div className="bg-white/20 p-3 rounded-2xl w-fit mb-4 backdrop-blur-sm">
+                {icon}
+            </div>
+            <div className="mt-auto">
+                <h3 className="text-2xl font-black tracking-tight">{title}</h3>
+                <p className="text-base font-semibold opacity-80 mb-6">{subtitle}</p>
+                <div className="flex items-center space-x-2 text-base font-bold">
+                    <span>Pelajari</span>
+                    <ArrowRight className="w-4 h-4" />
+                </div>
+            </div>
+        </div>
+        <div className="absolute -bottom-8 -right-8 text-white/10">
+            <Smartphone size={160} strokeWidth={1.5}/>
+        </div>
+    </button>
+);
+
+
 const EduMiniCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; onClick: () => void; }> = ({ icon, title, desc, onClick }) => (
   <button onClick={onClick} className="bg-white rounded-2xl p-4 text-left shadow-sm hover:shadow-lg transition-shadow border border-slate-100 group">
     <div className="flex items-center justify-between">
@@ -566,25 +663,5 @@ const TaxInfoRow: React.FC<{ label: string; status: string; }> = ({ label, statu
     <span className="text-slate-400 text-right">{status}</span>
   </div>
 );
-
-const DigitalAccessCard: React.FC<{ title: string; description: string; logo: string; color: 'blue' | 'emerald'; onClick: () => void; }> = ({ title, description, logo, color, onClick }) => {
-  const colors = {
-    blue: { bg: 'bg-blue-50', hoverBg: 'hover:bg-blue-100', text: 'text-blue-800' },
-    emerald: { bg: 'bg-emerald-50', hoverBg: 'hover:bg-emerald-100', text: 'text-emerald-800' }
-  };
-  return (
-    <button onClick={onClick} className={`w-full p-6 ${colors[color].bg} rounded-3xl text-left transition-colors ${colors[color].hoverBg}`}>
-      <div className="flex items-center justify-between mb-4">
-        <img src={logo} alt={`${title} Logo`} className="h-7" />
-        <div className="w-8 h-8 flex-shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm">
-          <Link className="w-4 h-4 text-slate-500" />
-        </div>
-      </div>
-      <h3 className={`font-bold text-lg ${colors[color].text}`}>{title}</h3>
-      <p className="text-sm text-slate-500 mt-1">{description}</p>
-    </button>
-  );
-};
-
 
 export default Landing;

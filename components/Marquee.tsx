@@ -3,40 +3,35 @@ import { MapPin } from 'lucide-react';
 
 const Marquee: React.FC = () => {
   const text = "Jl. Tj. Bar. Lama No.129, RT.3/RW.4, Tj. Bar., Kec. Jagakarsa, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12530";
-
-  const MarqueeContent = () => (
-    <div className="flex items-center flex-shrink-0 whitespace-nowrap">
-      <MapPin className="w-4 h-4 mx-4 text-slate-300" />
-      <span className="font-semibold text-sm text-slate-100">{text}</span>
-    </div>
-  );
+  
+  // Duplikasi teks untuk efek loop yang mulus
+  const marqueeContent = Array(4).fill(text).map((item, index) => (
+    <React.Fragment key={index}>
+        <MapPin className="w-4 h-4 text-blue-300 shrink-0 mx-6" />
+        <span>{item}</span>
+    </React.Fragment>
+  ));
 
   return (
-    <>
-      <div 
-        className="w-full h-12 bg-slate-900 flex items-center overflow-hidden"
-        aria-label="Informasi Alamat Kantor"
-      >
-        <div className="flex animate-marquee hover:pause">
-          <MarqueeContent />
-          <MarqueeContent />
-          <MarqueeContent />
-          <MarqueeContent />
-        </div>
+    <div className="bg-slate-900 py-3 overflow-hidden whitespace-nowrap relative">
+      <div className="marquee-content flex items-center text-sm font-bold text-white">
+        {marqueeContent}
       </div>
-      <style>{`
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
+       <style>{`
+        .marquee-content {
+          animation: marquee-scroll 60s linear infinite;
         }
-        .animate-marquee {
-          animation: marquee 60s linear infinite;
-        }
-        .hover\\:pause:hover {
-          animation-play-state: paused;
+        
+        @keyframes marquee-scroll {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
         }
       `}</style>
-    </>
+    </div>
   );
 };
 
