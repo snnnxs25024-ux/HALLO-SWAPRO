@@ -358,17 +358,17 @@ const Landing: React.FC = () => {
       <FloatingSocialButtons />
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/70 backdrop-blur-md border-b border-slate-100 z-50">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex justify-between h-14 items-center">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between h-16 items-center">
             <div className="flex items-center space-x-2">
-              <img src="https://i.imgur.com/P7t1bQy.png" alt="SIM Group Logo" className="h-7" />
-              <span className="font-extrabold text-lg text-slate-900 tracking-tight">HALLO SWAPRO</span>
+              <img src="https://i.imgur.com/P7t1bQy.png" alt="SIM Group Logo" className="h-8" />
+              <span className="font-extrabold text-xl text-slate-900 tracking-tight">HALLO SWAPRO</span>
             </div>
-            <div className="hidden md:flex items-center space-x-6 text-sm font-semibold text-slate-500">
+            <div className="hidden md:flex items-center space-x-6 text-base font-semibold text-slate-500">
               <button onClick={scrollToEducation} className="hover:text-blue-600 transition-colors">Edukasi</button>
               <button 
                 onClick={() => navigate('/search')}
-                className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold hover:bg-blue-600 transition shadow-sm active:scale-95"
+                className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold hover:bg-blue-600 transition shadow-sm active:scale-95"
               >
                 Portal Karyawan
               </button>
@@ -377,61 +377,59 @@ const Landing: React.FC = () => {
         </div>
       </nav>
       
-      {/* Hero Section with Visual Character Representation */}
-      <section className="pt-24 pb-16 px-6 overflow-hidden">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left order-2 lg:order-1">
-            <div className="inline-flex items-center space-x-2 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full mb-6">
-              <Sparkles className="w-3 h-3 text-blue-600" />
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Sistem Pintar Karyawan</span>
+      {/* Hero Section */}
+      <section className="pt-32 pb-24 px-6 overflow-hidden bg-slate-50/50">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="text-center lg:text-left">
+            <div className="inline-flex items-center space-x-2 bg-blue-100 px-4 py-1.5 rounded-full mb-6">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-bold text-blue-600 uppercase tracking-widest">Sistem Pintar Karyawan</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-[1.15] mb-6 tracking-tight">
-              Portal Profesional <br /> Karyawan <span className="text-blue-600">SWAPRO</span>.
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
+              Portal Profesional Karyawan <span className="text-blue-600">SWAPRO</span>.
             </h1>
-            <p className="text-base md:text-lg text-slate-500 max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
+            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
               Sumber informasi resmi dan terintegrasi untuk seluruh kebutuhan administrasi, produktivitas, dan pengembangan diri Anda selama berkarir di SWAPRO.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
               <button 
                 onClick={() => navigate('/search')}
-                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold text-base hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
               >
                 <span>Portal Karyawan</span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </button>
               <button 
                 onClick={scrollToEducation}
-                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-3 rounded-2xl font-bold text-base text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 transition"
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-4 rounded-xl font-bold text-lg text-slate-700 border border-slate-300 bg-white hover:bg-slate-50 transition"
               >
-                <BookOpen className="w-4 h-4 mr-1 text-slate-400" />
+                <BookOpen className="w-5 h-5 mr-1 text-slate-400" />
                 <span>Lihat Edukasi</span>
               </button>
             </div>
           </div>
 
-          <div className="relative flex justify-center lg:justify-end order-1 lg:order-2">
-            {/* Visual Character / Avatar Group */}
-            <div className="relative w-64 h-64 md:w-80 md:h-80">
-              <div className="absolute inset-0 bg-blue-600/5 rounded-full blur-3xl animate-pulse"></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-60 md:h-60 bg-white border border-slate-100 rounded-[40px] shadow-2xl flex items-center justify-center rotate-3 transition-transform hover:rotate-0 duration-500">
+          <div className="relative flex justify-center lg:justify-end">
+            <div className="relative w-80 h-80 md:w-96 md:h-96">
+              <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 md:w-72 md:h-72 bg-white border border-slate-100 rounded-[50px] shadow-2xl flex items-center justify-center rotate-6 transition-transform hover:rotate-0 duration-500">
                 <div className="relative flex flex-col items-center">
-                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-3xl shadow-xl mb-4">
-                    <User className="w-12 h-12 text-white" />
+                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-8 rounded-[30px] shadow-2xl mb-5">
+                    <User className="w-16 h-16 text-white" />
                   </div>
-                  <div className="flex -space-x-2">
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center"><Activity className="w-3 h-3 text-white" /></div>
-                    <div className="w-6 h-6 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center"><Receipt className="w-3 h-3 text-white" /></div>
-                    <div className="w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><ShieldCheck className="w-3 h-3 text-white" /></div>
+                  <div className="flex -space-x-3">
+                    <div className="w-8 h-8 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center"><Activity className="w-4 h-4 text-white" /></div>
+                    <div className="w-8 h-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center"><Receipt className="w-4 h-4 text-white" /></div>
+                    <div className="w-8 h-8 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-white" /></div>
                   </div>
-                  <p className="mt-4 font-bold text-slate-800 text-sm">Professional Assistant</p>
+                  <p className="mt-5 font-bold text-slate-800">Professional Assistant</p>
                 </div>
               </div>
-              {/* Floating elements */}
-              <div className="absolute -top-4 -right-4 bg-white p-3 rounded-2xl shadow-lg border border-slate-50 animate-bounce [animation-duration:3s]">
-                <Brain className="w-5 h-5 text-rose-500" />
+              <div className="absolute -top-4 -right-4 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 animate-bounce [animation-duration:3s]">
+                <Brain className="w-6 h-6 text-rose-500" />
               </div>
-              <div className="absolute -bottom-4 -left-4 bg-white p-3 rounded-2xl shadow-lg border border-slate-50 animate-bounce [animation-delay:1s] [animation-duration:4s]">
-                <Zap className="w-5 h-5 text-amber-500" />
+              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 animate-bounce [animation-delay:1s] [animation-duration:4s]">
+                <Zap className="w-6 h-6 text-amber-500" />
               </div>
             </div>
           </div>
@@ -440,106 +438,109 @@ const Landing: React.FC = () => {
 
       <Marquee />
 
-      {/* Mindset & Productivity (Compact Grid) */}
-      <section ref={educationSectionRef} className="py-12 px-6 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Mental Resilience */}
-          <div className="bg-rose-50/50 rounded-3xl p-6 border border-rose-100">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-rose-500 text-white rounded-xl shadow-sm"><RotateCcw className="w-4 h-4" /></div>
-              <h2 className="font-black text-slate-800 tracking-tight uppercase text-sm">Menyikapi Kegagalan</h2>
+      {/* Edukasi Section */}
+      <section ref={educationSectionRef} className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Pengembangan Diri</h2>
+            <p className="text-lg md:text-xl text-slate-500 mt-4 max-w-3xl mx-auto">Tingkatkan ketangguhan mental dan produktivitas Anda dengan prinsip-prinsip teruji ini.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+                <div className="flex items-center space-x-3 mb-6">
+                    <div className="p-3 bg-rose-100 text-rose-600 rounded-xl"><RotateCcw className="w-6 h-6" /></div>
+                    <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Menyikapi Kegagalan</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <EducationCard icon={<Brain className="w-6 h-6"/>} title="Growth Mindset" desc="Lihat kegagalan sebagai data untuk belajar, bukan sebagai identitas diri." onClick={() => setModalContent(EDUCATION_CONTENT.growth)} color="rose" />
+                    <EducationCard icon={<Heart className="w-6 h-6"/>} title="Self-Kindness" desc="Perlakukan diri Anda dengan pengertian saat menghadapi kesulitan." onClick={() => setModalContent(EDUCATION_CONTENT.kindness)} color="rose" />
+                    <EducationCard icon={<TrendingUp className="w-6 h-6"/>} title="Evaluasi & Pivot" desc="Analisis kesalahan, pelajari, dan ubah strategi Anda menjadi lebih baik." onClick={() => setModalContent(EDUCATION_CONTENT.pivot)} color="rose" />
+                    <EducationCard icon={<Award className="w-6 h-6"/>} title="Persistensi" desc="Ketangguhan adalah kunci untuk terus maju mencapai tujuan jangka panjang." onClick={() => setModalContent(EDUCATION_CONTENT.persist)} color="rose" />
+                </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <EduMiniCard icon={<Brain className="w-4 h-4 text-rose-600"/>} title="Growth" desc="Gagal adalah data, bukan identitas." onClick={() => setModalContent(EDUCATION_CONTENT.growth)} />
-              <EduMiniCard icon={<Heart className="w-4 h-4 text-rose-600"/>} title="Kindness" desc="Bersikaplah baik pada diri sendiri." onClick={() => setModalContent(EDUCATION_CONTENT.kindness)} />
-              <EduMiniCard icon={<TrendingUp className="w-4 h-4 text-rose-600"/>} title="Pivot" desc="Evaluasi dan ubah strategi Anda." onClick={() => setModalContent(EDUCATION_CONTENT.pivot)} />
-              <EduMiniCard icon={<Award className="w-4 h-4 text-rose-600"/>} title="Persist" desc="Ketangguhan kunci keberhasilan." onClick={() => setModalContent(EDUCATION_CONTENT.persist)} />
+            <div>
+                <div className="flex items-center space-x-3 mb-6">
+                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl"><Zap className="w-6 h-6" /></div>
+                    <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Tips Produktivitas</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <EducationCard icon={<Target className="w-6 h-6"/>} title="Eat The Frog" desc="Selesaikan tugas tersulit di pagi hari untuk momentum maksimal." onClick={() => setModalContent(EDUCATION_CONTENT.eatFrog)} color="indigo" />
+                    <EducationCard icon={<Clock className="w-6 h-6"/>} title="Teknik Pomodoro" desc="Bekerja fokus dalam interval pendek untuk menjaga konsentrasi." onClick={() => setModalContent(EDUCATION_CONTENT.pomodoro)} color="indigo" />
+                    <EducationCard icon={<Coffee className="w-6 h-6"/>} title="Deep Work" desc="Alokasikan waktu tanpa gangguan untuk hasil kerja berkualitas tinggi." onClick={() => setModalContent(EDUCATION_CONTENT.deepWork)} color="indigo" />
+                    <EducationCard icon={<Activity className="w-6 h-6"/>} title="Task Batching" desc="Kelompokkan tugas sejenis untuk mengurangi peralihan konteks." onClick={() => setModalContent(EDUCATION_CONTENT.batching)} color="indigo" />
+                </div>
             </div>
+        </div>
+      </section>
+
+      {/* BPJS Section */}
+      <section className="py-24 px-6 bg-slate-50 border-y border-slate-200/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Manfaat Jaminan Sosial</h2>
+            <p className="text-lg md:text-xl text-slate-500 mt-4">Pahami perlindungan dan hak-hak dasar Anda sebagai karyawan SWAPRO.</p>
           </div>
 
-          {/* Productivity */}
-          <div className="bg-indigo-50/50 rounded-3xl p-6 border border-indigo-100">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-indigo-500 text-white rounded-xl shadow-sm"><Zap className="w-4 h-4" /></div>
-              <h2 className="font-black text-slate-800 tracking-tight uppercase text-sm">Tips Produktivitas</h2>
+          <div className="space-y-16">
+            {/* BPJS Ketenagakerjaan */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="text-center lg:text-left">
+                    <img src="https://i.imgur.com/kRyWzNX.png" alt="BPJS Ketenagakerjaan Logo" className="h-10 mb-4 mx-auto lg:mx-0" />
+                    <h3 className="text-3xl font-bold text-slate-800">BPJS Ketenagakerjaan</h3>
+                    <p className="text-lg text-slate-500 mt-2 leading-relaxed">Perlindungan sosial ekonomi untuk menjamin kehidupan yang layak saat terjadi risiko kerja, hari tua, atau kehilangan pekerjaan.</p>
+                </div>
+                <div className="space-y-4">
+                    <BenefitRow title="Jaminan Kecelakaan Kerja (JKK)" desc="Perlindungan komprehensif atas kecelakaan kerja." onClick={() => setModalContent(EDUCATION_CONTENT.jkk)} />
+                    <BenefitRow title="Jaminan Kematian (JKM)" desc="Santunan tunai untuk ahli waris." onClick={() => setModalContent(EDUCATION_CONTENT.jkm)} />
+                    <BenefitRow title="Jaminan Hari Tua (JHT)" desc="Program tabungan untuk masa pensiun." onClick={() => setModalContent(EDUCATION_CONTENT.jht)} />
+                    <BenefitRow title="Jaminan Kehilangan Pekerjaan (JKP)" desc="Manfaat tunai saat mengalami PHK." onClick={() => setModalContent(EDUCATION_CONTENT.jkp)} />
+                </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <EduMiniCard icon={<Target className="w-4 h-4 text-indigo-600"/>} title="Eat Frog" desc="Selesaikan tugas sulit di pagi hari." onClick={() => setModalContent(EDUCATION_CONTENT.eatFrog)} />
-              <EduMiniCard icon={<Clock className="w-4 h-4 text-indigo-600"/>} title="Pomodoro" desc="Fokus 25 menit, istirahat 5 menit." onClick={() => setModalContent(EDUCATION_CONTENT.pomodoro)} />
-              <EduMiniCard icon={<Coffee className="w-4 h-4 text-indigo-600"/>} title="Deep Work" desc="Matikan notifikasi, fokus total." onClick={() => setModalContent(EDUCATION_CONTENT.deepWork)} />
-              <EduMiniCard icon={<Activity className="w-4 h-4 text-indigo-600"/>} title="Batching" desc="Gabungkan tugas-tugas sejenis." onClick={() => setModalContent(EDUCATION_CONTENT.batching)} />
+
+            {/* BPJS Kesehatan */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="text-center lg:text-left">
+                    <img src="https://i.imgur.com/fOML1ll.png" alt="BPJS Kesehatan Logo" className="h-10 mb-4 mx-auto lg:mx-0" />
+                    <h3 className="text-3xl font-bold text-slate-800">BPJS Kesehatan</h3>
+                    <p className="text-lg text-slate-500 mt-2 leading-relaxed">Jaminan pemeliharaan kesehatan yang menyeluruh dan berkesinambungan untuk seluruh peserta dan anggota keluarga.</p>
+                </div>
+                <div className="space-y-4">
+                    <BenefitRow title="Rawat Jalan (FKTP)" desc="Akses layanan kesehatan dasar dan obat." onClick={() => setModalContent(EDUCATION_CONTENT.rawatJalan)} />
+                    <BenefitRow title="Rawat Inap (Rujukan)" desc="Pelayanan di rumah sakit sesuai rujukan." onClick={() => setModalContent(EDUCATION_CONTENT.rawatInap)} />
+                    <BenefitRow title="Jaminan Persalinan" desc="Penanggungan biaya kelahiran ibu dan bayi." onClick={() => setModalContent(EDUCATION_CONTENT.persalinan)} />
+                    <BenefitRow title="Pelayanan Gawat Darurat" desc="Penanganan kondisi darurat medis 24 jam." onClick={() => setModalContent(EDUCATION_CONTENT.emergency)} />
+                </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BPJS Modules (Color-coded) */}
-      <section className="py-12 px-6 bg-[#F8FAFC] border-y border-slate-200/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Manfaat Jaminan Sosial</h2>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">Perlindungan hak dasar karyawan</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* BPJS TK */}
-            <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
-              <div className="flex items-center justify-between mb-6">
-                <img src="https://i.imgur.com/kRyWzNX.png" alt="BPJS Ketenagakerjaan Logo" className="h-7" />
-                <div className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase">Employment</div>
-              </div>
-              <div className="space-y-3">
-                <BenefitRow title="JKK" desc="Jaminan Kecelakaan Kerja komprehensif." onClick={() => setModalContent(EDUCATION_CONTENT.jkk)} />
-                <BenefitRow title="JKM" desc="Santunan kematian bagi ahli waris." onClick={() => setModalContent(EDUCATION_CONTENT.jkm)} />
-                <BenefitRow title="JHT" desc="Tabungan hari tua & dana pensiun." onClick={() => setModalContent(EDUCATION_CONTENT.jht)} />
-                <BenefitRow title="JKP" desc="Manfaat tunai jika kehilangan pekerjaan." onClick={() => setModalContent(EDUCATION_CONTENT.jkp)} />
-              </div>
-            </div>
-
-            {/* BPJS KS */}
-            <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
-              <div className="flex items-center justify-between mb-6">
-                <img src="https://i.imgur.com/fOML1ll.png" alt="BPJS Kesehatan Logo" className="h-7" />
-                <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase">Health</div>
-              </div>
-              <div className="space-y-3">
-                <BenefitRow title="Rawat Jalan" desc="Konsultasi dokter & obat-obatan FKTP." onClick={() => setModalContent(EDUCATION_CONTENT.rawatJalan)} />
-                <BenefitRow title="Rawat Inap" desc="Layanan rumah sakit sesuai kelas." onClick={() => setModalContent(EDUCATION_CONTENT.rawatInap)} />
-                <BenefitRow title="Persalinan" desc="Biaya kelahiran ibu & bayi ditanggung." onClick={() => setModalContent(EDUCATION_CONTENT.persalinan)} />
-                <BenefitRow title="Emergency" desc="Penanganan darurat medis 24 jam." onClick={() => setModalContent(EDUCATION_CONTENT.emergency)} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PPh 21 Section (Professional & Compact) */}
-      <section className="py-12 px-6 max-w-6xl mx-auto">
-        <button onClick={() => setModalContent(EDUCATION_CONTENT.pph21)} className="w-full bg-slate-900 rounded-[32px] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl text-left hover:scale-[1.01] transition-transform duration-300">
-          <div className="absolute top-0 right-0 p-8 opacity-10"><Receipt className="w-48 h-48" /></div>
+      {/* PPh 21 Section */}
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <button onClick={() => setModalContent(EDUCATION_CONTENT.pph21)} className="w-full bg-slate-900 rounded-[40px] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl text-left hover:scale-[1.01] transition-transform duration-300">
+          <div className="absolute -top-10 -right-10 opacity-5"><Receipt className="w-64 h-64" /></div>
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             <div>
-              <div className="bg-amber-500/20 p-2 rounded-xl w-fit mb-4">
-                <Coins className="w-6 h-6 text-amber-500" />
+              <div className="bg-amber-500/20 p-3 rounded-2xl w-fit mb-5">
+                <Coins className="w-8 h-8 text-amber-500" />
               </div>
-              <h2 className="text-2xl font-black mb-4 tracking-tight">Transparansi Pajak PPh 21</h2>
-              <p className="text-base text-slate-400 leading-relaxed mb-6">
+              <h2 className="text-3xl font-black mb-4 tracking-tight">Transparansi Pajak PPh 21</h2>
+              <p className="text-lg text-slate-400 leading-relaxed mb-6">
                 Memahami potongan pajak penghasilan Anda kini lebih mudah dengan skema <b>TER 2024</b>. Transparansi adalah prioritas kami dalam mengelola payroll karyawan.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-xs font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-lg uppercase tracking-wider">Kategori TER A, B, C</span>
-                <span className="text-xs font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-lg uppercase tracking-wider">PTKP Terkini</span>
+              <div className="flex flex-wrap gap-3">
+                <span className="text-sm font-bold bg-white/5 border border-white/10 px-4 py-1.5 rounded-lg uppercase tracking-wider">Kategori TER A, B, C</span>
+                <span className="text-sm font-bold bg-white/5 border border-white/10 px-4 py-1.5 rounded-lg uppercase tracking-wider">PTKP Terkini</span>
               </div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-               <h4 className="text-amber-500 font-black text-xs uppercase mb-4 tracking-widest">Detail Kategori TER</h4>
-               <div className="space-y-3">
+               <h4 className="text-amber-500 font-black text-sm uppercase mb-4 tracking-widest">Detail Kategori TER</h4>
+               <div className="space-y-4">
                  <TaxInfoRow label="TER A" status="TK/0, TK/1, K/0" />
                  <TaxInfoRow label="TER B" status="TK/2, TK/3, K/1, K/2" />
                  <TaxInfoRow label="TER C" status="K/3" />
                </div>
                <div onClick={e => e.stopPropagation()} className="w-full mt-6">
-                 <button onClick={() => navigate('/search')} className="w-full py-2.5 bg-amber-500 text-slate-900 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-amber-400 transition active:scale-95">
+                 <button onClick={() => navigate('/search')} className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold text-base uppercase tracking-widest hover:bg-amber-400 transition active:scale-95">
                    Cek Slip Gaji Anda
                  </button>
                </div>
@@ -549,11 +550,11 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Panduan Akses Digital */}
-      <section className="py-16 px-6 bg-slate-50 border-y border-slate-200/50">
-        <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Aplikasi Jaminan Sosial</h2>
-                <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-2">AKSES MANFAAT ANDA DENGAN MUDAH</p>
+      <section className="py-24 px-6 bg-slate-50 border-y border-slate-200/50">
+        <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Aplikasi Jaminan Sosial</h2>
+                <p className="text-lg md:text-xl text-slate-500 mt-4">Akses semua manfaat Anda dengan mudah melalui genggaman.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <DigitalAppCard 
@@ -576,14 +577,14 @@ const Landing: React.FC = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-10">
           <div className="flex justify-between items-center">
             <div>
               <div className="flex items-center space-x-3 mb-2">
-                  <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-7" />
-                  <span className="font-extrabold text-lg text-slate-900 tracking-tight">HALLO SWAPRO</span>
+                  <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-8" />
+                  <span className="font-extrabold text-xl text-slate-900 tracking-tight">HALLO SWAPRO</span>
               </div>
-              <p className="text-sm text-slate-500 font-medium">© 2025 PT SWAPRO INTERNATIONAL</p>
+              <p className="text-base text-slate-500 font-medium">© 2025 PT SWAPRO INTERNATIONAL</p>
             </div>
             <button 
               onClick={() => navigate('/admin')}
@@ -632,33 +633,42 @@ const DigitalAppCard: React.FC<{
 );
 
 
-const EduMiniCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; onClick: () => void; }> = ({ icon, title, desc, onClick }) => (
-  <button onClick={onClick} className="bg-white rounded-2xl p-4 text-left shadow-sm hover:shadow-lg transition-shadow border border-slate-100 group">
-    <div className="flex items-center justify-between">
-      <div className="p-1.5 bg-slate-100 rounded-lg">{icon}</div>
-      <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-        <ChevronRight className="w-3 h-3 text-slate-400 group-hover:text-white" />
+const EducationCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; onClick: () => void; color: 'rose' | 'indigo' }> = ({ icon, title, desc, onClick, color }) => {
+  const colorClasses = {
+    rose: { bg: 'bg-rose-100', text: 'text-rose-600' },
+    indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+  };
+  const selectedColor = colorClasses[color];
+  return (
+    <button onClick={onClick} className="w-full bg-white p-6 rounded-2xl text-left shadow-lg shadow-slate-200/50 border border-slate-200 hover:-translate-y-1 transition-transform duration-300 group hover:shadow-blue-500/10 hover:border-blue-200">
+      <div className={`inline-block p-3 rounded-xl ${selectedColor.bg} ${selectedColor.text} mb-4`}>
+        {icon}
       </div>
-    </div>
-    <h3 className="font-bold text-sm text-slate-800 mt-3">{title}</h3>
-    <p className="text-xs text-slate-500">{desc}</p>
-  </button>
-);
+      <h3 className="font-bold text-lg text-slate-900">{title}</h3>
+      <p className="text-base text-slate-500 mt-1">{desc}</p>
+      <div className="flex items-center space-x-2 text-sm font-semibold text-blue-600 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span>Pelajari Lebih Lanjut</span>
+        <ArrowRight className="w-4 h-4" />
+      </div>
+    </button>
+  );
+};
+
 
 const BenefitRow: React.FC<{ title: string; desc: string; onClick: () => void; }> = ({ title, desc, onClick }) => (
-  <button onClick={onClick} className="w-full flex items-center justify-between text-left p-3 rounded-xl hover:bg-slate-50 transition-colors group">
+  <button onClick={onClick} className="w-full flex items-center justify-between text-left p-4 rounded-xl hover:bg-white transition-colors group border border-slate-200 bg-white/50 hover:shadow-lg hover:border-blue-200">
     <div className="min-w-0">
-      <h3 className="font-bold text-base text-slate-800">{title}</h3>
-      <p className="text-sm text-slate-500 truncate pr-4">{desc}</p>
+      <h3 className="font-bold text-lg text-slate-800">{title}</h3>
+      <p className="text-base text-slate-500 pr-4">{desc}</p>
     </div>
-    <div className="w-8 h-8 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white" />
+    <div className="w-10 h-10 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white" />
     </div>
   </button>
 );
 
 const TaxInfoRow: React.FC<{ label: string; status: string; }> = ({ label, status }) => (
-  <div className="flex items-center justify-between text-sm border-b border-white/10 pb-2">
+  <div className="flex items-center justify-between text-base border-b border-white/10 pb-3">
     <span className="font-semibold text-white">{label}</span>
     <span className="text-slate-400 text-right">{status}</span>
   </div>
