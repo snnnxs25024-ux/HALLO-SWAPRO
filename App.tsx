@@ -14,6 +14,7 @@ import PayslipPage from './pages/PayslipPage';
 import { supabase } from './services/supabaseClient';
 import { Loader } from 'lucide-react';
 import { useNotifier } from './components/Notifier';
+import AudioPlayer from './components/AudioPlayer';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
@@ -289,82 +290,80 @@ const App: React.FC = () => {
   }
 
   // --- ROUTING LOGIC ---
-
-  // PIC/Admin is logged in
-  if (state.currentUser) {
-    return (
-      <HashRouter>
-        <div className="flex h-screen bg-[var(--background)] overflow-hidden">
-          <Sidebar user={state.currentUser!} onLogout={logout} />
-          <main className="flex-1 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard state={state} />} />
-              <Route path="/database" element={
-                <Database
-                  employees={state.employees}
-                  clients={state.clients}
-                  payslips={state.payslips}
-                  onDataChange={handleEmployeeDataChange}
-                  onAddEmployee={addEmployee}
-                  onUpdateEmployee={updateEmployee}
-                  onDeleteEmployee={deleteEmployee}
-                  currentUser={state.currentUser!}
-                />
-              } />
-              <Route path="/clients" element={
-                <ClientManagement
-                  clients={state.clients}
-                  employees={state.employees}
-                  onAddClient={addClient}
-                  onUpdateClient={updateClient}
-                  onDeleteClient={deleteClient}
-                />
-              } />
-              <Route path="/payslips" element={
-                <PayslipPage
-                  payslips={state.payslips}
-                  employees={state.employees}
-                  clients={state.clients}
-                  onPayslipsChange={handlePayslipsChange}
-                />
-              } />
-              <Route path="/chat" element={
-                <ChatPage
-                  employees={state.employees}
-                  currentUser={state.currentUser!}
-                  chats={state.employeeChats}
-                  onUpdate={handleEmployeeChatUpdate}
-                  onGenerateReply={generateEmployeeReply}
-                />
-              } />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </main>
-        </div>
-      </HashRouter>
-    );
-  }
-
-  // Public / Not logged in
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/admin" element={
-          <Login 
-            onPicLogin={handlePicLogin}
-          />
-        } />
-        <Route path="/search" element={
-          <PublicSearch 
-            employees={state.employees} 
-            clients={state.clients}
-            payslips={state.payslips}
-            currentUser={{id: 'public', nama: 'Guest', role: UserRole.KARYAWAN}}
-          />
-        } />
-        <Route path="*" element={<Landing />} />
-      </Routes>
-    </HashRouter>
+    <>
+      <AudioPlayer />
+      <HashRouter>
+        {state.currentUser ? (
+          // --- Logged-in View ---
+          <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+            <Sidebar user={state.currentUser} onLogout={logout} />
+            <main className="flex-1 overflow-y-auto">
+              <Routes>
+                <Route path="/" element={<Dashboard state={state} />} />
+                <Route path="/database" element={
+                  <Database
+                    employees={state.employees}
+                    clients={state.clients}
+                    payslips={state.payslips}
+                    onDataChange={handleEmployeeDataChange}
+                    onAddEmployee={addEmployee}
+                    onUpdateEmployee={updateEmployee}
+                    onDeleteEmployee={deleteEmployee}
+                    currentUser={state.currentUser}
+                  />
+                } />
+                <Route path="/clients" element={
+                  <ClientManagement
+                    clients={state.clients}
+                    employees={state.employees}
+                    onAddClient={addClient}
+                    onUpdateClient={updateClient}
+                    onDeleteClient={deleteClient}
+                  />
+                } />
+                <Route path="/payslips" element={
+                  <PayslipPage
+                    payslips={state.payslips}
+                    employees={state.employees}
+                    clients={state.clients}
+                    onPayslipsChange={handlePayslipsChange}
+                  />
+                } />
+                <Route path="/chat" element={
+                  <ChatPage
+                    employees={state.employees}
+                    currentUser={state.currentUser}
+                    chats={state.employeeChats}
+                    onUpdate={handleEmployeeChatUpdate}
+                    onGenerateReply={generateEmployeeReply}
+                  />
+                } />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </main>
+          </div>
+        ) : (
+          // --- Public / Logged-out View ---
+          <Routes>
+            <Route path="/admin" element={
+              <Login 
+                onPicLogin={handlePicLogin}
+              />
+            } />
+            <Route path="/search" element={
+              <PublicSearch 
+                employees={state.employees} 
+                clients={state.clients}
+                payslips={state.payslips}
+                currentUser={{id: 'public', nama: 'Guest', role: UserRole.KARYAWAN}}
+              />
+            } />
+            <Route path="*" element={<Landing />} />
+          </Routes>
+        )}
+      </HashRouter>
+    </>
   );
 };
 

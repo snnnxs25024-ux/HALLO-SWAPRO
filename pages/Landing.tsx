@@ -259,7 +259,7 @@ const Landing: React.FC = () => {
           <div className="flex justify-between h-14 items-center">
             <div className="flex items-center space-x-2">
               <img src="https://i.imgur.com/P7t1bQy.png" alt="SIM Group Logo" className="h-7" />
-              <span className="font-extrabold text-lg text-slate-900 tracking-tight">HALO SWAPRO</span>
+              <span className="font-extrabold text-lg text-slate-900 tracking-tight">HALLO SWAPRO</span>
             </div>
             <div className="hidden md:flex items-center space-x-6 text-sm font-semibold text-slate-500">
               <button onClick={scrollToEducation} className="hover:text-blue-600 transition-colors">Edukasi</button>
@@ -495,7 +495,7 @@ const Landing: React.FC = () => {
           <div>
             <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
               <img src="https://i.imgur.com/P7t1bQy.png" alt="SIM Group Logo" className="h-7" />
-              <span className="font-extrabold text-slate-900 tracking-tight text-base">HALO SWAPRO</span>
+              <span className="font-extrabold text-slate-900 tracking-tight text-base">HALLO SWAPRO</span>
             </div>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">© 2025 PT SWAPRO INTERNATIONAL</p>
           </div>
