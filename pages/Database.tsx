@@ -421,9 +421,10 @@ export const EmployeeModal: React.FC<{
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
                 <div className="bg-white rounded-none md:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn">
                     {/* Header */}
-                    <div className="p-5 md:p-6 bg-slate-50 border-b border-gray-200 flex items-start justify-between gap-4">
-                        <div className="flex items-center space-x-4">
-                            <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-3xl shadow-md ring-4 ring-white">
+                    <div className="p-5 pt-8 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 text-center md:text-left relative">
+                        <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
+                        <div className="flex flex-col md:flex-row items-center gap-4">
+                            <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-4xl shadow-md ring-4 ring-white shrink-0">
                                 {employeeData.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('')}
                             </div>
                             <div className="min-w-0">
@@ -434,14 +435,13 @@ export const EmployeeModal: React.FC<{
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-2 shrink-0">
+                        <div className="hidden md:flex items-center space-x-2 shrink-0">
                             {isPicUser && (
                               <>
-                                <button onClick={onEdit} className="hidden md:flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4" /><span>Edit</span></button>
-                                <button onClick={onDelete} className="hidden md:flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4" /><span>Hapus</span></button>
+                                <button onClick={onEdit} className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4" /><span>Edit</span></button>
+                                <button onClick={onDelete} className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4" /><span>Hapus</span></button>
                               </>
                             )}
-                            <button type="button" onClick={onClose} className="p-3 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
                         </div>
                     </div>
                     {/* Tabs */}
@@ -516,7 +516,7 @@ export const EmployeeModal: React.FC<{
                             </div>
                         )}
                     </div>
-                     <div className="p-2 flex md:hidden items-center justify-around bg-slate-100 border-t border-gray-200">
+                     <div className="p-2 flex md:hidden items-center justify-around gap-2 bg-slate-100 border-t border-gray-200">
                          {isPicUser && (
                             <>
                                 <button onClick={onEdit} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4"/><span>Edit</span></button>
