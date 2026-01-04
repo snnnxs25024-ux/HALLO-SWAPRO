@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { User as UserIcon, Receipt, LogOut, Phone, Building, Briefcase, Download, Cake, GraduationCap } from 'lucide-react';
 import { AppState, Employee } from '../types';
 
 interface EmployeePortalProps {
+    employee: Employee | null;
     allData: AppState;
+    onLogout: () => void;
 }
 
 const ProfileView: React.FC<{ employee: Employee, allData: AppState }> = ({ employee, allData }) => {
@@ -42,20 +44,11 @@ const ProfileView: React.FC<{ employee: Employee, allData: AppState }> = ({ empl
 }
 
 
-const EmployeePortal: React.FC<EmployeePortalProps> = ({ allData }) => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const employeeFromState = location.state?.employee as Employee | undefined;
+const EmployeePortal: React.FC<EmployeePortalProps> = ({ employee, allData, onLogout }) => {
     const [activeTab, setActiveTab] = useState('profil');
 
-    if (!employeeFromState) {
-        return <Navigate to="/search" replace />;
-    }
-    
-    // Ensure we have the full, most up-to-date employee object from the main state
-    const employee = allData.employees.find(e => e.id === employeeFromState.id);
     if (!employee) {
-        return <Navigate to="/search" replace />;
+        return <Navigate to="/login" replace />;
     }
 
     const TABS = [
@@ -78,7 +71,7 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ allData }) => {
                            <p className="text-sm font-semibold text-slate-800 truncate">{employee.fullName}</p>
                            <p className="text-xs text-slate-500 font-mono">{employee.id}</p>
                         </div>
-                        <button onClick={() => navigate('/search')} title="Keluar" className="p-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors">
+                        <button onClick={onLogout} title="Keluar" className="p-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors">
                             <LogOut className="w-5 h-5" />
                         </button>
                     </div>

@@ -1,28 +1,24 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User as UserIcon, Key } from 'lucide-react';
+import { ArrowLeft, User, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface LoginProps {
-  onPicLogin: (userId: string, pass: string) => boolean;
+interface EmployeeLoginProps {
+  onLogin: (id: string, pass: string) => boolean;
 }
 
-const Login: React.FC<LoginProps> = ({ onPicLogin }) => {
+const EmployeeLogin: React.FC<EmployeeLoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  
-  const title = 'Portal Login PIC/Admin';
-  const description = 'Masukkan ID Pengguna dan password Anda.';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!onPicLogin(userId, password)) {
-      setError('ID Pengguna atau Password salah.');
+    if (!onLogin(employeeId, password)) {
+        setError('ID Karyawan atau Password salah.');
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
@@ -38,34 +34,32 @@ const Login: React.FC<LoginProps> = ({ onPicLogin }) => {
 
       <div className="w-full max-w-sm lg:max-w-4xl">
         <div className="bg-white rounded-3xl shadow-2xl shadow-slate-300/40 border border-slate-200 overflow-hidden lg:grid lg:grid-cols-2">
-            {/* Visual Panel */}
             <div className="flex flex-col items-center justify-center p-8 lg:p-10 bg-gradient-to-br from-blue-600 to-indigo-700 text-white text-center">
                 <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-16 mb-4" />
                 <h1 className="text-2xl lg:text-3xl font-black tracking-tight">HALO SWAPRO</h1>
-                <p className="mt-2 text-blue-200 font-medium text-sm lg:text-base">Sistem Pintar Karyawan</p>
-                <p className="hidden lg:block mt-8 text-sm text-blue-300 leading-relaxed">Platform terintegrasi untuk manajemen sumber daya manusia yang lebih efisien dan modern.</p>
+                <p className="mt-2 text-blue-200 font-medium text-sm lg:text-base">Portal Karyawan</p>
+                <p className="hidden lg:block mt-8 text-sm text-blue-300 leading-relaxed">Akses data personalia, slip gaji, dan informasi penting lainnya melalui portal aman ini.</p>
             </div>
 
-            {/* Form Panel */}
             <form onSubmit={handleLogin} className="p-8 md:p-12">
                 <div className="text-center lg:text-left mb-8">
-                    <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">{title}</h2>
-                    <p className="text-sm lg:text-base text-slate-500 mt-2">{description}</p>
+                    <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">Login Karyawan</h2>
+                    <p className="text-sm lg:text-base text-slate-500 mt-2">Masukkan ID (NIK) dan password Anda.</p>
                 </div>
                 
                 {error && <p className="text-red-500 text-sm font-bold text-center bg-red-50 p-3 rounded-lg mb-4">{error}</p>}
                 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-1" htmlFor="userId">ID Pengguna</label>
+                        <label className="block text-sm font-bold text-slate-600 mb-1" htmlFor="employeeId">ID Karyawan (NIK)</label>
                         <div className="relative">
-                           <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                           <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
-                                id="userId"
+                                id="employeeId"
                                 type="text"
-                                value={userId}
-                                onChange={e => setUserId(e.target.value)}
-                                placeholder="e.g., pic-1"
+                                value={employeeId}
+                                onChange={e => setEmployeeId(e.target.value)}
+                                placeholder="Contoh: K001"
                                 className="w-full pl-10 pr-3 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition shadow-sm"
                                 required
                             />
@@ -93,6 +87,11 @@ const Login: React.FC<LoginProps> = ({ onPicLogin }) => {
                         Login
                     </button>
                 </div>
+                 <div className="text-center mt-6">
+                    <button type="button" onClick={() => navigate('/search')} className="text-xs font-semibold text-slate-500 hover:text-blue-600 transition">
+                        Lupa password atau ingin mencari rekan kerja?
+                    </button>
+                </div>
             </form>
         </div>
       </div>
@@ -100,4 +99,4 @@ const Login: React.FC<LoginProps> = ({ onPicLogin }) => {
   );
 };
 
-export default Login;
+export default EmployeeLogin;

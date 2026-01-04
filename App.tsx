@@ -15,10 +15,11 @@ import { supabase } from './services/supabaseClient';
 import { Loader } from 'lucide-react';
 import { useNotifier } from './components/Notifier';
 import EmployeePortal from './pages/EmployeePortal';
+import EmployeeLogin from './pages/EmployeeLogin';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
-  { id: 'pic-1', nama: 'PIC Swakarya', role: UserRole.PIC, avatar: 'https://i.imgur.com/P7t1bQy.png' },
+  { id: 'pic-1', nama: 'PIC Swakarya', role: UserRole.PIC, avatar: 'https://i.imgur.com/P7t1bQy.png', password: 'admin123' },
 ];
 
 const App: React.FC = () => {
@@ -29,6 +30,7 @@ const App: React.FC = () => {
     employeeChats: {},
     payslips: [],
   });
+  const [loggedInEmployee, setLoggedInEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const notifier = useNotifier();
 
@@ -69,20 +71,37 @@ const App: React.FC = () => {
     fetchInitialData();
   }, []);
   
-  // --- AUTHENTICATION (kept local) ---
-  const handlePicLogin = (userId: string): boolean => {
-    const user = MOCK_PIC_USER.find(u => u.id === userId) || null;
+  // --- AUTHENTICATION ---
+  const handlePicLogin = (userId: string, pass: string): boolean => {
+    const user = MOCK_PIC_USER.find(u => u.id === userId && u.password === pass);
     if (user) {
       setState(prev => ({ ...prev, currentUser: user }));
       notifier.addNotification(`Selamat datang, ${user.nama}!`, 'success');
       return true;
     }
+    notifier.addNotification('ID Pengguna atau Password salah.', 'error');
+    return false;
+  };
+
+  const handleEmployeeLogin = (id: string, pass: string): boolean => {
+    const employee = state.employees.find(e => e.id === id);
+    if (employee && employee.password && employee.password === pass) {
+      setLoggedInEmployee(employee);
+      notifier.addNotification(`Selamat datang, ${employee.fullName}!`, 'success');
+      return true;
+    }
+    notifier.addNotification('ID Karyawan atau Password salah.', 'error');
     return false;
   };
   
   const logout = () => {
     notifier.addNotification('Anda telah berhasil logout.', 'info');
     setState(prev => ({ ...prev, currentUser: null }));
+  };
+
+  const employeeLogout = () => {
+    notifier.addNotification('Anda telah berhasil logout.', 'info');
+    setLoggedInEmployee(null);
   };
   
   // --- CRUD OPERATIONS FOR EMPLOYEES ---
@@ -288,85 +307,103 @@ const App: React.FC = () => {
     );
   }
 
-  if (!state.currentUser) {
+  // --- ROUTING LOGIC ---
+
+  // PIC/Admin is logged in
+  if (state.currentUser) {
+    return (
+      <HashRouter>
+        <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+          <Sidebar user={state.currentUser!} onLogout={logout} />
+          <main className="flex-1 overflow-y-auto">
+            <Routes>
+              <Route path="/" element={<Dashboard state={state} />} />
+              <Route path="/database" element={
+                <Database
+                  employees={state.employees}
+                  clients={state.clients}
+                  payslips={state.payslips}
+                  onDataChange={handleEmployeeDataChange}
+                  onAddEmployee={addEmployee}
+                  onUpdateEmployee={updateEmployee}
+                  onDeleteEmployee={deleteEmployee}
+                  currentUser={state.currentUser!}
+                />
+              } />
+              <Route path="/clients" element={
+                <ClientManagement
+                  clients={state.clients}
+                  employees={state.employees}
+                  onAddClient={addClient}
+                  onUpdateClient={updateClient}
+                  onDeleteClient={deleteClient}
+                />
+              } />
+              <Route path="/payslips" element={
+                <PayslipPage
+                  payslips={state.payslips}
+                  employees={state.employees}
+                  clients={state.clients}
+                  onPayslipsChange={handlePayslipsChange}
+                />
+              } />
+              <Route path="/chat" element={
+                <ChatPage
+                  employees={state.employees}
+                  currentUser={state.currentUser!}
+                  chats={state.employeeChats}
+                  onUpdate={handleEmployeeChatUpdate}
+                  onGenerateReply={generateEmployeeReply}
+                />
+              } />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+        </div>
+      </HashRouter>
+    );
+  }
+
+  // Employee is logged in
+  if (loggedInEmployee) {
     return (
         <HashRouter>
             <Routes>
-                <Route path="/admin" element={
-                     <Login 
-                        onPicLogin={handlePicLogin}
-                        picUsers={MOCK_PIC_USER}
-                    />
-                } />
-                <Route path="/search" element={
-                    <PublicSearch 
-                        employees={state.employees} 
-                        clients={state.clients}
-                        payslips={state.payslips}
-                        currentUser={{id: 'public', nama: 'Guest', role: UserRole.KARYAWAN}}
-                    />
-                } />
-                 <Route path="/employee-portal" element={
-                    <EmployeePortal
+                <Route path="/" element={
+                     <EmployeePortal
+                        employee={loggedInEmployee}
                         allData={state}
+                        onLogout={employeeLogout}
                     />
-                } />
-                <Route path="*" element={<Landing />} />
+                }/>
+                <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </HashRouter>
     )
   }
 
-  // Default PIC/Admin view
+  // Public / Not logged in
   return (
     <HashRouter>
-      <div className="flex h-screen bg-[var(--background)] overflow-hidden">
-        <Sidebar user={state.currentUser!} onLogout={logout} />
-        <main className="flex-1 overflow-y-auto">
-          <Routes>
-            <Route path="/" element={<Dashboard state={state} />} />
-            <Route path="/database" element={
-              <Database
-                employees={state.employees}
-                clients={state.clients}
-                payslips={state.payslips}
-                onDataChange={handleEmployeeDataChange} // For bulk import
-                onAddEmployee={addEmployee}
-                onUpdateEmployee={updateEmployee}
-                onDeleteEmployee={deleteEmployee}
-                currentUser={state.currentUser!}
-              />
-            } />
-            <Route path="/clients" element={
-              <ClientManagement
-                clients={state.clients}
-                employees={state.employees}
-                onAddClient={addClient}
-                onUpdateClient={updateClient}
-                onDeleteClient={deleteClient}
-              />
-            } />
-            <Route path="/payslips" element={
-              <PayslipPage
-                payslips={state.payslips}
-                employees={state.employees}
-                clients={state.clients}
-                onPayslipsChange={handlePayslipsChange}
-              />
-            } />
-            <Route path="/chat" element={
-              <ChatPage
-                employees={state.employees}
-                currentUser={state.currentUser!}
-                chats={state.employeeChats}
-                onUpdate={handleEmployeeChatUpdate}
-                onGenerateReply={generateEmployeeReply}
-              />
-            } />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        <Route path="/admin" element={
+          <Login 
+            onPicLogin={handlePicLogin}
+          />
+        } />
+        <Route path="/login" element={
+          <EmployeeLogin onLogin={handleEmployeeLogin} />
+        } />
+        <Route path="/search" element={
+          <PublicSearch 
+            employees={state.employees} 
+            clients={state.clients}
+            payslips={state.payslips}
+            currentUser={{id: 'public', nama: 'Guest', role: UserRole.KARYAWAN}}
+          />
+        } />
+        <Route path="*" element={<Landing />} />
+      </Routes>
     </HashRouter>
   );
 };
