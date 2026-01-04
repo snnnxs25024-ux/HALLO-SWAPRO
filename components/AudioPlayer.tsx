@@ -1,55 +1,120 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 
-// URL ke file musik mars SWAPRO (di-host ulang untuk keandalan).
-const AUDIO_URL = 'https://files.catbox.moe/w2358p.mp3';
+// URL ke file musik mars SWAPRO.
+const AUDIO_URL = 'https://raw.githubusercontent.com/snnnxs25024-ux/mp3/main/Langkahkan%20kaki%20dengan%20pasti%20Menyongsong.mp3';
 
 const AudioPlayer: React.FC = () => {
-  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.15);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) {
-      audio.volume = 0.15; // Atur volume agar lebih nyaman sebagai musik latar
-      // Coba putar audio, tangani error jika autoplay diblokir oleh browser.
-      // Pemutaran akan dimulai saat pengguna pertama kali mengklik tombol.
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Autoplay was prevented. User interaction is needed.
-        });
-      }
-    }
+    if (!audio) return;
+
+    const setAudioData = () => {
+      setDuration(audio.duration);
+      setCurrentTime(audio.currentTime);
+    };
+
+    const setAudioTime = () => setCurrentTime(audio.currentTime);
+
+    audio.addEventListener('loadeddata', setAudioData);
+    audio.addEventListener('timeupdate', setAudioTime);
+
+    // Set initial volume
+    audio.volume = volume;
+
+    return () => {
+      audio.removeEventListener('loadeddata', setAudioData);
+      audio.removeEventListener('timeupdate', setAudioTime);
+    };
   }, []);
+
+  const togglePlayPause = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        audio.play().catch(e => console.error("Tidak dapat memutar audio:", e));
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   const toggleMute = () => {
     const audio = audioRef.current;
     if (audio) {
-      // Jika audio dijeda (karena pembatasan autoplay), klik pertama akan memulainya.
-      if (audio.paused) {
-        audio.play().catch(e => console.error("Tidak dapat memutar audio:", e));
-      }
-      
-      // Toggle status bisu (mute)
       const newMutedState = !audio.muted;
       audio.muted = newMutedState;
       setIsMuted(newMutedState);
+      if (!newMutedState && audio.volume === 0) {
+        setVolume(0.15);
+        audio.volume = 0.15;
+      }
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+      if (newVolume > 0 && isMuted) {
+        audioRef.current.muted = false;
+        setIsMuted(false);
+      } else if (newVolume === 0 && !isMuted) {
+        audioRef.current.muted = true;
+        setIsMuted(true);
+      }
     }
   };
 
   return (
     <>
-      {/* Atribut 'muted' memastikan musik dimulai tanpa suara jika autoplay berhasil */}
-      <audio ref={audioRef} src={AUDIO_URL} loop muted />
-      <button
-        onClick={toggleMute}
-        title={isMuted ? 'Nyalakan Musik' : 'Matikan Musik'}
-        aria-label="Toggle background music"
-        className="fixed bottom-6 left-6 z-[100] w-12 h-12 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-white transition-all duration-300 transform hover:scale-110 active:scale-95"
+      <audio ref={audioRef} src={AUDIO_URL} loop />
+      <div
+        onMouseEnter={() => setIsExpanded(true)}
+        onMouseLeave={() => setIsExpanded(false)}
+        className={`fixed bottom-6 left-6 z-[100] flex items-center h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-slate-200 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'w-52' : 'w-12'}`}
       >
-        {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-      </button>
+        <button
+          onClick={toggleMute}
+          title={isMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
+          aria-label="Toggle mute"
+          className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-slate-600 hover:text-blue-600 transition-colors"
+        >
+          {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+        </button>
+
+        <div className={`flex items-center gap-2 pl-1 pr-4 transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+          <button
+            onClick={togglePlayPause}
+            title={isPlaying ? 'Jeda' : 'Putar'}
+            aria-label="Play/Pause"
+            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 transition-colors"
+          >
+            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </button>
+          
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={isMuted ? 0 : volume}
+            onChange={handleVolumeChange}
+            className="w-24 h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
+            aria-label="Volume slider"
+          />
+        </div>
+      </div>
     </>
   );
 };
