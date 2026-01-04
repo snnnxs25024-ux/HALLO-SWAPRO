@@ -489,10 +489,10 @@ const Landing: React.FC = () => {
                     <p className="text-lg text-slate-500 mt-2 leading-relaxed">Perlindungan sosial ekonomi untuk menjamin kehidupan yang layak saat terjadi risiko kerja, hari tua, atau kehilangan pekerjaan.</p>
                 </div>
                 <div className="space-y-4">
-                    <BenefitRow title="Jaminan Kecelakaan Kerja (JKK)" desc="Perlindungan komprehensif atas kecelakaan kerja." onClick={() => setModalContent(EDUCATION_CONTENT.jkk)} />
-                    <BenefitRow title="Jaminan Kematian (JKM)" desc="Santunan tunai untuk ahli waris." onClick={() => setModalContent(EDUCATION_CONTENT.jkm)} />
-                    <BenefitRow title="Jaminan Hari Tua (JHT)" desc="Program tabungan untuk masa pensiun." onClick={() => setModalContent(EDUCATION_CONTENT.jht)} />
-                    <BenefitRow title="Jaminan Kehilangan Pekerjaan (JKP)" desc="Manfaat tunai saat mengalami PHK." onClick={() => setModalContent(EDUCATION_CONTENT.jkp)} />
+                    <BenefitRow color="blue" title="Jaminan Kecelakaan Kerja (JKK)" desc="Perlindungan komprehensif atas kecelakaan kerja." onClick={() => setModalContent(EDUCATION_CONTENT.jkk)} />
+                    <BenefitRow color="blue" title="Jaminan Kematian (JKM)" desc="Santunan tunai untuk ahli waris." onClick={() => setModalContent(EDUCATION_CONTENT.jkm)} />
+                    <BenefitRow color="blue" title="Jaminan Hari Tua (JHT)" desc="Program tabungan untuk masa pensiun." onClick={() => setModalContent(EDUCATION_CONTENT.jht)} />
+                    <BenefitRow color="blue" title="Jaminan Kehilangan Pekerjaan (JKP)" desc="Manfaat tunai saat mengalami PHK." onClick={() => setModalContent(EDUCATION_CONTENT.jkp)} />
                 </div>
             </div>
 
@@ -504,10 +504,10 @@ const Landing: React.FC = () => {
                     <p className="text-lg text-slate-500 mt-2 leading-relaxed">Jaminan pemeliharaan kesehatan yang menyeluruh dan berkesinambungan untuk seluruh peserta dan anggota keluarga.</p>
                 </div>
                 <div className="space-y-4">
-                    <BenefitRow title="Rawat Jalan (FKTP)" desc="Akses layanan kesehatan dasar dan obat." onClick={() => setModalContent(EDUCATION_CONTENT.rawatJalan)} />
-                    <BenefitRow title="Rawat Inap (Rujukan)" desc="Pelayanan di rumah sakit sesuai rujukan." onClick={() => setModalContent(EDUCATION_CONTENT.rawatInap)} />
-                    <BenefitRow title="Jaminan Persalinan" desc="Penanggungan biaya kelahiran ibu dan bayi." onClick={() => setModalContent(EDUCATION_CONTENT.persalinan)} />
-                    <BenefitRow title="Pelayanan Gawat Darurat" desc="Penanganan kondisi darurat medis 24 jam." onClick={() => setModalContent(EDUCATION_CONTENT.emergency)} />
+                    <BenefitRow color="emerald" title="Rawat Jalan (FKTP)" desc="Akses layanan kesehatan dasar dan obat." onClick={() => setModalContent(EDUCATION_CONTENT.rawatJalan)} />
+                    <BenefitRow color="emerald" title="Rawat Inap (Rujukan)" desc="Pelayanan di rumah sakit sesuai rujukan." onClick={() => setModalContent(EDUCATION_CONTENT.rawatInap)} />
+                    <BenefitRow color="emerald" title="Jaminan Persalinan" desc="Penanggungan biaya kelahiran ibu dan bayi." onClick={() => setModalContent(EDUCATION_CONTENT.persalinan)} />
+                    <BenefitRow color="emerald" title="Pelayanan Gawat Darurat" desc="Penanganan kondisi darurat medis 24 jam." onClick={() => setModalContent(EDUCATION_CONTENT.emergency)} />
                 </div>
             </div>
           </div>
@@ -635,18 +635,36 @@ const DigitalAppCard: React.FC<{
 
 const EducationCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; onClick: () => void; color: 'rose' | 'indigo' }> = ({ icon, title, desc, onClick, color }) => {
   const colorClasses = {
-    rose: { bg: 'bg-rose-100', text: 'text-rose-600' },
-    indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+    rose: { 
+      bg: 'bg-rose-50', 
+      border: 'border-rose-200', 
+      hoverBg: 'hover:bg-rose-100',
+      hoverShadow: 'hover:shadow-rose-500/10',
+      hoverBorder: 'hover:border-rose-300',
+      iconBg: 'bg-rose-100', 
+      iconText: 'text-rose-600',
+      linkText: 'text-rose-600'
+    },
+    indigo: { 
+      bg: 'bg-indigo-50', 
+      border: 'border-indigo-200',
+      hoverBg: 'hover:bg-indigo-100',
+      hoverShadow: 'hover:shadow-indigo-500/10',
+      hoverBorder: 'hover:border-indigo-300',
+      iconBg: 'bg-indigo-100', 
+      iconText: 'text-indigo-600',
+      linkText: 'text-indigo-600'
+    },
   };
   const selectedColor = colorClasses[color];
   return (
-    <button onClick={onClick} className="w-full bg-white p-6 rounded-2xl text-left shadow-lg shadow-slate-200/50 border border-slate-200 hover:-translate-y-1 transition-transform duration-300 group hover:shadow-blue-500/10 hover:border-blue-200">
-      <div className={`inline-block p-3 rounded-xl ${selectedColor.bg} ${selectedColor.text} mb-4`}>
+    <button onClick={onClick} className={`w-full p-6 rounded-2xl text-left shadow-lg shadow-slate-200/50 hover:-translate-y-1 transition-transform duration-300 group ${selectedColor.bg} ${selectedColor.border} ${selectedColor.hoverBg} ${selectedColor.hoverShadow} ${selectedColor.hoverBorder}`}>
+      <div className={`inline-block p-3 rounded-xl ${selectedColor.iconBg} ${selectedColor.iconText} mb-4`}>
         {icon}
       </div>
       <h3 className="font-bold text-lg text-slate-900">{title}</h3>
       <p className="text-base text-slate-500 mt-1">{desc}</p>
-      <div className="flex items-center space-x-2 text-sm font-semibold text-blue-600 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={`flex items-center space-x-2 text-sm font-semibold mt-4 opacity-0 group-hover:opacity-100 transition-opacity ${selectedColor.linkText}`}>
         <span>Pelajari Lebih Lanjut</span>
         <ArrowRight className="w-4 h-4" />
       </div>
@@ -655,17 +673,35 @@ const EducationCard: React.FC<{ icon: React.ReactNode; title: string; desc: stri
 };
 
 
-const BenefitRow: React.FC<{ title: string; desc: string; onClick: () => void; }> = ({ title, desc, onClick }) => (
-  <button onClick={onClick} className="w-full flex items-center justify-between text-left p-4 rounded-xl hover:bg-white transition-colors group border border-slate-200 bg-white/50 hover:shadow-lg hover:border-blue-200">
-    <div className="min-w-0">
-      <h3 className="font-bold text-lg text-slate-800">{title}</h3>
-      <p className="text-base text-slate-500 pr-4">{desc}</p>
-    </div>
-    <div className="w-10 h-10 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white" />
-    </div>
-  </button>
-);
+const BenefitRow: React.FC<{ title: string; desc: string; onClick: () => void; color: 'blue' | 'emerald' }> = ({ title, desc, onClick, color }) => {
+  const colorClasses = {
+    blue: {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      hoverBg: 'hover:bg-blue-100',
+      hoverChevronBg: 'group-hover:bg-blue-600'
+    },
+    emerald: {
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-200',
+      hoverBg: 'hover:bg-emerald-100',
+      hoverChevronBg: 'group-hover:bg-emerald-600'
+    }
+  };
+  const selectedColor = colorClasses[color];
+
+  return (
+    <button onClick={onClick} className={`w-full flex items-center justify-between text-left p-4 rounded-xl transition-colors group border hover:shadow-lg ${selectedColor.bg} ${selectedColor.border} ${selectedColor.hoverBg}`}>
+      <div className="min-w-0">
+        <h3 className="font-bold text-lg text-slate-800">{title}</h3>
+        <p className="text-base text-slate-500 pr-4">{desc}</p>
+      </div>
+      <div className={`w-10 h-10 flex-shrink-0 bg-white rounded-full flex items-center justify-center transition-colors border ${selectedColor.border} ${selectedColor.hoverChevronBg}`}>
+        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white" />
+      </div>
+    </button>
+  );
+};
 
 const TaxInfoRow: React.FC<{ label: string; status: string; }> = ({ label, status }) => (
   <div className="flex items-center justify-between text-base border-b border-white/10 pb-3">
