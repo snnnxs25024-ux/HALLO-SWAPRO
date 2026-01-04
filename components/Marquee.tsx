@@ -19,7 +19,7 @@ const Marquee: React.FC = () => {
       </div>
        <style>{`
         .marquee-content {
-          animation: marquee-scroll 60s linear infinite;
+          animation: marquee-scroll 20s linear infinite;
         }
         
         @keyframes marquee-scroll {
