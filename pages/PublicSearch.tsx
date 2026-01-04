@@ -1,7 +1,170 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Employee, Client, User as AppUser, Payslip } from '../types';
+import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft, ChevronLeft, ChevronRight, LogOut, Receipt, Download, Cake, GraduationCap, Briefcase, Phone, FileText, Shield, Calendar, CreditCard } from 'lucide-react';
+import { Employee, Client, User as AppUser, Payslip, EmployeeStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
+
+
+const getFileNameFromUrl = (url?: string): string => {
+    if (!url) return 'File tidak ditemukan';
+    try {
+        const urlObj = new URL(url);
+        const pathSegments = urlObj.pathname.split('/');
+        return decodeURIComponent(pathSegments[pathSegments.length - 1]);
+    } catch (e) {
+        return 'nama_file_tidak_valid.bin';
+    }
+};
+
+const formatPeriod = (period: string) => {
+    const [year, month] = period.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1).toLocaleString('id-ID', {
+        month: 'long',
+        year: 'numeric'
+    });
+};
+
+const EmployeeDetailModal: React.FC<{ 
+    employee: Employee; 
+    allData: { clients: Client[], payslips: Payslip[] };
+    onClose: () => void;
+}> = ({ employee, allData, onClose }) => {
+    const [activeTab, setActiveTab] = useState('profil');
+    const { clients, payslips } = allData;
+    const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
+    const employeePayslips = useMemo(() => payslips.filter(p => p.employeeId === employee.id).sort((a,b) => b.period.localeCompare(a.period)), [payslips, employee.id]);
+
+    const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
+    
+    const renderInfoItem = (icon: React.ReactNode, label: string, value: any) => (
+        <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0 text-slate-400 mt-0.5">{icon}</div>
+            <div className="min-w-0 flex-1">
+                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">{label}</p>
+                <p className="text-base font-bold text-slate-800 break-words">{value || '-'}</p>
+            </div>
+        </div>
+    );
+
+    const renderDocumentLink = (label: string, url?: string) => (
+        url ? (
+            <a href={url} download={getFileNameFromUrl(url)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
+                <div className="flex items-center space-x-3 min-w-0">
+                    <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span className="font-semibold text-sm text-slate-700 truncate">{getFileNameFromUrl(url)}</span>
+                </div>
+                <Download className="w-5 h-5 text-slate-400 ml-2" />
+            </a>
+        ) : (
+             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg opacity-60 border border-gray-100">
+                <FileText className="w-5 h-5 text-gray-400" />
+                <span className="text-sm text-gray-500 italic">{label} belum tersedia</span>
+            </div>
+        )
+    );
+    
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
+            <div className="bg-white rounded-none md:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn">
+                {/* Header */}
+                 <div className="p-5 md:p-6 bg-slate-50 border-b border-gray-200 flex items-start justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-3xl shadow-md ring-4 ring-white">
+                            {employee.fullName.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                        </div>
+                        <div className="min-w-0">
+                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate pr-2">{employee.fullName}</h2>
+                            <p className="text-sm md:text-base text-slate-500 font-mono">{employee.id}</p>
+                             <div className={`mt-2 inline-block text-xs font-bold uppercase px-2.5 py-1 rounded-full ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
+                                {employee.status}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0">
+                        <button type="button" onClick={onClose} className="p-3 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
+                    </div>
+                </div>
+                {/* Tabs */}
+                <div className="px-4 border-b border-gray-200 bg-white">
+                    <nav className="-mb-px flex space-x-4 md:space-x-6 overflow-x-auto">
+                        {tabs.map(tab => (
+                            <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 border-b-2 font-bold text-sm uppercase tracking-wider ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                                {tab}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 md:p-6 overflow-y-auto bg-white flex-1">
+                     {activeTab === 'profil' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            {renderInfoItem(<User className="w-4 h-4" />, "NIK KTP", employee.ktpId)}
+                            {renderInfoItem(<Phone className="w-4 h-4" />, "No. WhatsApp", employee.whatsapp || '#N/A')}
+                            {renderInfoItem(<User className="w-4 h-4" />, "Jenis Kelamin", employee.gender)}
+                            {renderInfoItem(<Cake className="w-4 h-4" />, "Tanggal Lahir", employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-')}
+                            {renderInfoItem(<GraduationCap className="w-4 h-4" />, "Pendidikan Terakhir", employee.lastEducation || '-')}
+                            {renderInfoItem(<CreditCard className="w-4 h-4" />, "NPWP", employee.npwp)}
+                            {renderInfoItem(<User className="w-4 h-4" />, "NIK SWAPRO", employee.swaproId)}
+                        </div>
+                    )}
+                     {activeTab === 'pekerjaan' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employee.clientId || ''))}
+                            {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employee.position)}
+                            {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employee.branch)}
+                            {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Join", employee.joinDate ? new Date(employee.joinDate).toLocaleDateString('id-ID') : '-')}
+                            {renderInfoItem(<Calendar className="w-4 h-4" />, "End of Contract", employee.endDate ? new Date(employee.endDate).toLocaleDateString('id-ID') : '-')}
+                            {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Resign", employee.resignDate ? new Date(employee.resignDate).toLocaleDateString('id-ID') : '-')}
+                            {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employee.contractNumber)}
+                            <div className="md:col-span-2">
+                                {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan SP", employee.disciplinaryActions)}
+                            </div>
+                        </div>
+                    )}
+                     {activeTab === 'finansial' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employee.bankAccount?.bankName)}
+                            {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employee.bankAccount?.number)}
+                            {renderInfoItem(<User className="w-4 h-4" />, "Nama Rekening", employee.bankAccount?.holderName)}
+                            {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS TK", employee.bpjs?.ketenagakerjaan)}
+                            {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS KS", employee.bpjs?.kesehatan)}
+                        </div>
+                    )}
+                    {activeTab === 'dokumen' && (
+                        <div className="space-y-4 max-w-full">
+                            {renderDocumentLink("PKWT New Hire", employee.documents?.pkwtNewHire)}
+                            {renderDocumentLink("PKWT Perpanjangan", employee.documents?.pkwtExtension)}
+                            {renderDocumentLink("Surat SP", employee.documents?.spLetter)}
+                        </div>
+                    )}
+                    {activeTab === 'slip gaji' && (
+                        <div className="space-y-3">
+                            {employeePayslips.length > 0 ? (
+                                employeePayslips.map(slip => (
+                                    <a key={slip.id} href={slip.fileUrl} download={`slip-gaji-${employee.fullName}-${slip.period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
+                                        <div className="flex items-center space-x-3 min-w-0">
+                                            <Receipt className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                            <span className="font-semibold text-sm text-slate-700 truncate">Slip Gaji {formatPeriod(slip.period)}</span>
+                                        </div>
+                                        <Download className="w-5 h-5 text-slate-400 ml-2" />
+                                    </a>
+                                ))
+                            ) : (
+                                <p className="text-center text-base text-slate-400 italic py-8">Belum ada data slip gaji untuk Anda.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+                .animate-scaleIn { animation: scaleIn 0.3s ease-out forwards; }
+            `}</style>
+        </div>
+    )
+}
 
 
 // --- SUB-COMPONENTS ---
@@ -153,6 +316,7 @@ const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslip
   const [filterBranch, setFilterBranch] = useState('all');
   const [hasSearched, setHasSearched] = useState(false);
   const [passwordPromptState, setPasswordPromptState] = useState<{ isOpen: boolean, targetEmployee: Employee | null, error: string }>({ isOpen: false, targetEmployee: null, error: '' });
+  const [detailModalState, setDetailModalState] = useState<{ isOpen: boolean, employee: Employee | null }>({ isOpen: false, employee: null });
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   
@@ -204,8 +368,8 @@ const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslip
   const handlePasswordSubmit = (nikInput: string) => {
     const targetEmployee = passwordPromptState.targetEmployee;
     if (targetEmployee && (nikInput === targetEmployee.id || nikInput === targetEmployee.swaproId)) {
-        navigate('/employee-portal', { state: { employee: targetEmployee } });
         handleClosePasswordPrompt();
+        setDetailModalState({ isOpen: true, employee: targetEmployee });
     } else {
         setPasswordPromptState(prev => ({ ...prev, error: 'NIK Karyawan atau NIK SWAPRO salah.' }));
     }
@@ -319,6 +483,14 @@ const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslip
         onSubmit={handlePasswordSubmit}
         error={passwordPromptState.error}
       />
+
+      {detailModalState.isOpen && detailModalState.employee && (
+        <EmployeeDetailModal
+            employee={detailModalState.employee}
+            allData={{ clients, payslips }}
+            onClose={() => setDetailModalState({ isOpen: false, employee: null })}
+        />
+      )}
     </div>
   );
 };

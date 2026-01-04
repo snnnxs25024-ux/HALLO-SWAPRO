@@ -14,8 +14,6 @@ import PayslipPage from './pages/PayslipPage';
 import { supabase } from './services/supabaseClient';
 import { Loader } from 'lucide-react';
 import { useNotifier } from './components/Notifier';
-import EmployeePortal from './pages/EmployeePortal';
-import EmployeeLogin from './pages/EmployeeLogin';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
@@ -30,7 +28,6 @@ const App: React.FC = () => {
     employeeChats: {},
     payslips: [],
   });
-  const [loggedInEmployee, setLoggedInEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const notifier = useNotifier();
 
@@ -82,26 +79,10 @@ const App: React.FC = () => {
     notifier.addNotification('ID Pengguna atau Password salah.', 'error');
     return false;
   };
-
-  const handleEmployeeLogin = (id: string, pass: string): boolean => {
-    const employee = state.employees.find(e => e.id === id);
-    if (employee && employee.password && employee.password === pass) {
-      setLoggedInEmployee(employee);
-      notifier.addNotification(`Selamat datang, ${employee.fullName}!`, 'success');
-      return true;
-    }
-    notifier.addNotification('ID Karyawan atau Password salah.', 'error');
-    return false;
-  };
   
   const logout = () => {
     notifier.addNotification('Anda telah berhasil logout.', 'info');
     setState(prev => ({ ...prev, currentUser: null }));
-  };
-
-  const employeeLogout = () => {
-    notifier.addNotification('Anda telah berhasil logout.', 'info');
-    setLoggedInEmployee(null);
   };
   
   // --- CRUD OPERATIONS FOR EMPLOYEES ---
@@ -364,24 +345,6 @@ const App: React.FC = () => {
     );
   }
 
-  // Employee is logged in
-  if (loggedInEmployee) {
-    return (
-        <HashRouter>
-            <Routes>
-                <Route path="/" element={
-                     <EmployeePortal
-                        employee={loggedInEmployee}
-                        allData={state}
-                        onLogout={employeeLogout}
-                    />
-                }/>
-                <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-        </HashRouter>
-    )
-  }
-
   // Public / Not logged in
   return (
     <HashRouter>
@@ -390,9 +353,6 @@ const App: React.FC = () => {
           <Login 
             onPicLogin={handlePicLogin}
           />
-        } />
-        <Route path="/login" element={
-          <EmployeeLogin onLogin={handleEmployeeLogin} />
         } />
         <Route path="/search" element={
           <PublicSearch 

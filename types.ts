@@ -35,7 +35,6 @@ export interface Employee {
   id: string; // NIK Karyawan
   swaproId: string; // NIK SWAPRO
   fullName: string;
-  password?: string; // Added for employee login
   ktpId: string;
   whatsapp: string;
   clientId: string;

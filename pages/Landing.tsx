@@ -264,7 +264,7 @@ const Landing: React.FC = () => {
             <div className="hidden md:flex items-center space-x-6 text-sm font-semibold text-slate-500">
               <button onClick={scrollToEducation} className="hover:text-blue-600 transition-colors">Edukasi</button>
               <button 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/search')}
                 className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold hover:bg-blue-600 transition shadow-sm active:scale-95"
               >
                 Portal Karyawan
@@ -291,10 +291,10 @@ const Landing: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
               <button 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/search')}
                 className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold text-base hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
               >
-                <span>Login Karyawan</span>
+                <span>Portal Karyawan</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
               <button 
@@ -435,7 +435,7 @@ const Landing: React.FC = () => {
                  <TaxInfoRow label="TER C" status="K/3" />
                </div>
                <div onClick={e => e.stopPropagation()} className="w-full mt-6">
-                 <button onClick={() => navigate('/login')} className="w-full py-2.5 bg-amber-500 text-slate-900 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-amber-400 transition active:scale-95">
+                 <button onClick={() => navigate('/search')} className="w-full py-2.5 bg-amber-500 text-slate-900 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-amber-400 transition active:scale-95">
                    Cek Slip Gaji Anda
                  </button>
                </div>

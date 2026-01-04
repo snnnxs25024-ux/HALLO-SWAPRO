@@ -27,6 +27,8 @@ import {
   Loader2,
   Cake,
   GraduationCap,
+  // Fix: Import Calendar icon
+  Calendar,
 } from 'lucide-react';
 import { Employee, Client, EmployeeStatus, User, UserRole, Payslip, EDUCATION_LEVELS } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -368,9 +370,8 @@ export const EmployeeModal: React.FC<{
                     const file = filePayloads[docName]!;
                     const filePath = `documents/${employeeId}/${file.name}`;
                     const publicUrl = await uploadFile('public', filePath, file);
-                    const [parent, child] = docName.split('.');
                     if (!finalData.documents) finalData.documents = {};
-                    finalData.documents[child as keyof Employee['documents']] = publicUrl;
+                    finalData.documents[docName.split('.')[1] as keyof Employee['documents']] = publicUrl;
                 }
             }
 
@@ -388,10 +389,10 @@ export const EmployeeModal: React.FC<{
     // --- RENDER FUNCTIONS FOR VIEW MODE ---
     const renderInfoItem = (icon: React.ReactNode, label: string, value: any) => (
         <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0 text-slate-400 mt-1">{icon}</div>
+            <div className="flex-shrink-0 text-slate-400 mt-0.5">{icon}</div>
             <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">{label}</p>
-                <p className="text-base font-semibold text-slate-800 break-words">{value || '-'}</p>
+                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">{label}</p>
+                <p className="text-base font-bold text-slate-800 break-words">{value || '-'}</p>
             </div>
         </div>
     );
@@ -416,80 +417,78 @@ export const EmployeeModal: React.FC<{
     const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
 
     if (isViewMode && employeeData) {
-        const birthDate = employeeData.birthDate;
-        const age = birthDate ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000) : null;
-        const birthDateDisplay = birthDate ? `${new Date(birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'})}${age ? ` (${age} thn)` : ''}` : '-';
-
         return (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4">
-                <div className="bg-white rounded-none md:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200">
-                    {/* Header View */}
-                    <div className="p-5 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sticky top-0">
-                       <div className="flex items-center space-x-4">
-                            <img src={employeeData.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employeeData.fullName || '')}&background=random`} alt={employeeData.fullName} className="w-20 h-20 md:w-24 md:h-24 rounded-full ring-4 ring-white shadow-md object-cover" />
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
+                <div className="bg-white rounded-none md:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn">
+                    {/* Header */}
+                    <div className="p-5 md:p-6 bg-slate-50 border-b border-gray-200 flex items-start justify-between gap-4">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-3xl shadow-md ring-4 ring-white">
+                                {employeeData.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                            </div>
                             <div className="min-w-0">
                                 <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate pr-2">{employeeData.fullName}</h2>
                                 <p className="text-sm md:text-base text-slate-500 font-mono">{employeeData.id}</p>
-                                <div className={`mt-2 inline-block text-xs font-bold uppercase px-2.5 py-1 rounded-full ${employeeData.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                                <div className={`mt-2 inline-block text-xs font-bold uppercase px-2.5 py-1 rounded-full ${employeeData.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
                                     {employeeData.status}
                                 </div>
                             </div>
-                       </div>
-                        <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                        </div>
+                        <div className="flex items-center space-x-2 shrink-0">
                             {isPicUser && (
                               <>
-                                <button onClick={onEdit} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4"/><span>Edit</span></button>
-                                <button onClick={onDelete} className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition whitespace-nowrap"><Trash2 className="w-4 h-4"/><span>Hapus</span></button>
+                                <button onClick={onEdit} className="hidden md:flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4" /><span>Edit</span></button>
+                                <button onClick={onDelete} className="hidden md:flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4" /><span>Hapus</span></button>
                               </>
                             )}
-                            <button type="button" onClick={onClose} className="p-3 rounded-lg hover:bg-gray-200"><X className="w-5 h-5" /></button>
+                            <button type="button" onClick={onClose} className="p-3 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
                         </div>
                     </div>
-                    {/* Tabs View */}
-                     <div className="px-4 border-b border-gray-200 bg-white sticky top-[105px] md:top-0">
+                    {/* Tabs */}
+                    <div className="px-4 border-b border-gray-200 bg-white">
                         <nav className="-mb-px flex space-x-4 md:space-x-6 overflow-x-auto">
                             {tabs.map(tab => (
-                                <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 border-b-2 font-bold text-sm uppercase tracking-tight whitespace-nowrap ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                                <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 border-b-2 font-bold text-sm uppercase tracking-wider ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
                                     {tab}
                                 </button>
                             ))}
                         </nav>
                     </div>
 
-                    {/* Content View */}
+                    {/* Content */}
                     <div className="p-5 md:p-6 overflow-y-auto bg-white flex-1">
                         {activeTab === 'profil' && (
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "NIK KTP", employeeData.ktpId)}
-                                {renderInfoItem(<Phone className="w-5 h-5" />, "No. WhatsApp", employeeData.whatsapp)}
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "Jenis Kelamin", employeeData.gender)}
-                                {renderInfoItem(<Cake className="w-5 h-5" />, "Tanggal Lahir", birthDateDisplay)}
-                                {renderInfoItem(<GraduationCap className="w-5 h-5" />, "Pendidikan Terakhir", employeeData.lastEducation)}
-                                {renderInfoItem(<CreditCard className="w-5 h-5" />, "NPWP", employeeData.npwp)}
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "NIK SWAPRO", employeeData.swaproId)}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK KTP", employeeData.ktpId)}
+                                {renderInfoItem(<Phone className="w-4 h-4" />, "No. WhatsApp", employeeData.whatsapp)}
+                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "Jenis Kelamin", employeeData.gender)}
+                                {renderInfoItem(<Cake className="w-4 h-4" />, "Tanggal Lahir", employeeData.birthDate ? new Date(employeeData.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-')}
+                                {renderInfoItem(<GraduationCap className="w-4 h-4" />, "Pendidikan Terakhir", employeeData.lastEducation)}
+                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "NPWP", employeeData.npwp)}
+                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK SWAPRO", employeeData.swaproId)}
                             </div>
                         )}
                         {activeTab === 'pekerjaan' && (
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {renderInfoItem(<Building className="w-5 h-5" />, "Klien", clientMap.get(employeeData.clientId || ''))}
-                                {renderInfoItem(<Briefcase className="w-5 h-5" />, "Jabatan", employeeData.position)}
-                                {renderInfoItem(<Building className="w-5 h-5" />, "Cabang", employeeData.branch)}
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "Tanggal Join", employeeData.joinDate ? new Date(employeeData.joinDate).toLocaleDateString('id-ID') : '-')}
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "End of Contract", employeeData.endDate ? new Date(employeeData.endDate).toLocaleDateString('id-ID') : '-')}
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "Tanggal Resign", employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID') : '-')}
-                                {renderInfoItem(<FileText className="w-5 h-5" />, "Kontrak Ke", employeeData.contractNumber)}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employeeData.clientId || ''))}
+                                {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employeeData.position)}
+                                {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employeeData.branch)}
+                                {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Join", employeeData.joinDate ? new Date(employeeData.joinDate).toLocaleDateString('id-ID') : '-')}
+                                {renderInfoItem(<Calendar className="w-4 h-4" />, "End of Contract", employeeData.endDate ? new Date(employeeData.endDate).toLocaleDateString('id-ID') : '-')}
+                                {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Resign", employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID') : '-')}
+                                {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employeeData.contractNumber)}
                                 <div className="md:col-span-2">
-                                  {renderInfoItem(<Shield className="w-5 h-5" />, "Catatan SP", employeeData.disciplinaryActions)}
+                                  {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan SP", employeeData.disciplinaryActions)}
                                 </div>
                             </div>
                         )}
                          {activeTab === 'finansial' && (
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {renderInfoItem(<CreditCard className="w-5 h-5" />, "Bank", employeeData.bankAccount?.bankName)}
-                                {renderInfoItem(<CreditCard className="w-5 h-5" />, "No. Rekening", employeeData.bankAccount?.number)}
-                                {renderInfoItem(<UserIcon className="w-5 h-5" />, "Nama Rekening", employeeData.bankAccount?.holderName)}
-                                {renderInfoItem(<Shield className="w-5 h-5" />, "BPJS TK", employeeData.bpjs?.ketenagakerjaan)}
-                                {renderInfoItem(<Shield className="w-5 h-5" />, "BPJS KS", employeeData.bpjs?.kesehatan)}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employeeData.bankAccount?.bankName)}
+                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employeeData.bankAccount?.number)}
+                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "Nama Rekening", employeeData.bankAccount?.holderName)}
+                                {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS TK", employeeData.bpjs?.ketenagakerjaan)}
+                                {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS KS", employeeData.bpjs?.kesehatan)}
                             </div>
                         )}
                         {activeTab === 'dokumen' && (
@@ -500,7 +499,7 @@ export const EmployeeModal: React.FC<{
                             </div>
                         )}
                         {activeTab === 'slip gaji' && (
-                             <div className="space-y-3">
+                            <div className="space-y-3">
                                 {employeePayslips.length > 0 ? (
                                     employeePayslips.map(slip => (
                                         <a key={slip.id} href={slip.fileUrl} download={`slip-gaji-${employeeData.fullName}-${slip.period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
@@ -517,7 +516,21 @@ export const EmployeeModal: React.FC<{
                             </div>
                         )}
                     </div>
+                     <div className="p-2 flex md:hidden items-center justify-around bg-slate-100 border-t border-gray-200">
+                         {isPicUser && (
+                            <>
+                                <button onClick={onEdit} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4"/><span>Edit</span></button>
+                                <button onClick={onDelete} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4"/><span>Hapus</span></button>
+                            </>
+                         )}
+                     </div>
                 </div>
+                 <style>{`
+                    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                    @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                    .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+                    .animate-scaleIn { animation: scaleIn 0.2s ease-out forwards; }
+                `}</style>
             </div>
         );
     }
