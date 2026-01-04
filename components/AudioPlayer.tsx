@@ -6,7 +6,7 @@ const AUDIO_URL = 'https://raw.githubusercontent.com/snnnxs25024-ux/mp3/main/Lan
 
 const AudioPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // Mulai dalam mode senyap untuk autoplay
   const [volume, setVolume] = useState(0.15);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -23,28 +23,41 @@ const AudioPlayer: React.FC = () => {
     };
 
     const setAudioTime = () => setCurrentTime(audio.currentTime);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
     audio.addEventListener('loadeddata', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
 
-    // Set initial volume
     audio.volume = volume;
+
+    // Coba putar audio secara otomatis. Ini akan berhasil karena elemennya disenyapkan.
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.error("Autoplay dicegah:", error);
+        setIsPlaying(false);
+      });
+    }
 
     return () => {
       audio.removeEventListener('loadeddata', setAudioData);
       audio.removeEventListener('timeupdate', setAudioTime);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
   }, []);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
     if (audio) {
-      if (isPlaying) {
-        audio.pause();
-      } else {
+      if (audio.paused) {
         audio.play().catch(e => console.error("Tidak dapat memutar audio:", e));
+      } else {
+        audio.pause();
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -76,9 +89,11 @@ const AudioPlayer: React.FC = () => {
     }
   };
 
+  const isEffectivelyMuted = isMuted || volume === 0;
+
   return (
     <>
-      <audio ref={audioRef} src={AUDIO_URL} loop />
+      <audio ref={audioRef} src={AUDIO_URL} loop muted />
       <div
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
@@ -86,11 +101,11 @@ const AudioPlayer: React.FC = () => {
       >
         <button
           onClick={toggleMute}
-          title={isMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
+          title={isEffectivelyMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
           aria-label="Toggle mute"
           className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-slate-600 hover:text-blue-600 transition-colors"
         >
-          {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+          {isEffectivelyMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
         </button>
 
         <div className={`flex items-center gap-2 pl-1 pr-4 transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>

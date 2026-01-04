@@ -445,7 +445,7 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Digital Access (JMO & JKN) */}
-      <section className="py-12 px-6 max-w-6xl mx-auto">
+      <section className="py-12 px-6 max-w-6xl mx-auto pb-24">
         <div className="text-center mb-10">
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Panduan Akses Digital</h2>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">Aktivasi mandiri akun jaminan sosial</p>

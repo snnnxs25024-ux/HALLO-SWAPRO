@@ -25,7 +25,7 @@ const Login: React.FC<LoginProps> = ({ onPicLogin }) => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative pb-24">
       <button 
         onClick={() => navigate('/')}
         className="absolute top-6 left-6 flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors group z-10"

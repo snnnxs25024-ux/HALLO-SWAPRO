@@ -139,7 +139,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ employees, currentUser, chats, onUp
                             <div ref={messagesEndRef} />
                         </div>
                         <footer className="p-3 md:p-4 border-t border-gray-200 bg-white sticky bottom-0">
-                            <div className="relative">
+                            <div className="relative pl-20 md:pl-0">
                                 <input
                                     type="text"
                                     value={newMessage}

@@ -393,7 +393,7 @@ const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslip
         </div>
       </header>
       
-      <main className="p-6 md:p-10 max-w-6xl mx-auto">
+      <main className="p-6 md:p-10 max-w-6xl mx-auto pb-24">
         <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Cari Data Diri Anda</h1>
             <p className="text-lg text-slate-500 mt-2 max-w-2xl mx-auto">Gunakan NIK atau nama lengkap Anda untuk menemukan profil, slip gaji, dan informasi penting lainnya.</p>
