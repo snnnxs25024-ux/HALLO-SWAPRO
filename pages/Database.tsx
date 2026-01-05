@@ -439,9 +439,17 @@ export const EmployeeModal: React.FC<{
                     <div className="p-5 pt-8 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 text-center md:text-left relative">
                         <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
                         <div className="flex flex-col md:flex-row items-center gap-4">
-                            <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-4xl shadow-md ring-4 ring-white shrink-0">
-                                {employeeData.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                            </div>
+                            {employeeData.profilePhotoUrl ? (
+                                <img
+                                    src={employeeData.profilePhotoUrl}
+                                    alt={employeeData.fullName || 'Foto Profil'}
+                                    className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md shrink-0"
+                                />
+                            ) : (
+                                <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center text-white font-black text-4xl shadow-md ring-4 ring-white shrink-0">
+                                    {employeeData.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                                </div>
+                            )}
                             <div className="min-w-0">
                                 <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate pr-2">{employeeData.fullName}</h2>
                                 <p className="text-sm md:text-base text-slate-500 font-mono">{employeeData.id}</p>
