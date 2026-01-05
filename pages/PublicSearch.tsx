@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft, ChevronLeft, ChevronRight, LogOut, Receipt, Download, Cake, GraduationCap, Briefcase, Phone, FileText, Shield, Calendar, CreditCard } from 'lucide-react';
+import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft, ChevronLeft, ChevronRight, LogOut, Receipt, Download, Cake, GraduationCap, Briefcase, Phone, FileText, Shield, Calendar, CreditCard, FileX } from 'lucide-react';
 import { Employee, Client, User as AppUser, Payslip, EmployeeStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
+const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 const getFileNameFromUrl = (url?: string): string => {
     if (!url) return 'File tidak ditemukan';
@@ -29,9 +30,24 @@ const EmployeeDetailModal: React.FC<{
     onClose: () => void;
 }> = ({ employee, allData, onClose }) => {
     const [activeTab, setActiveTab] = useState('profil');
+    const [selectedPayslipYear, setSelectedPayslipYear] = useState(new Date().getFullYear());
     const { clients, payslips } = allData;
     const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
     const employeePayslips = useMemo(() => payslips.filter(p => p.employeeId === employee.id).sort((a,b) => b.period.localeCompare(a.period)), [payslips, employee.id]);
+    const contractHistory = employee.documents?.contractHistory || [];
+
+    const payslipYears = useMemo(() => {
+        const years = new Set<string>(employeePayslips.map(p => p.period.substring(0, 4)));
+        const currentYear = new Date().getFullYear().toString();
+        years.add(currentYear);
+        return Array.from(years).sort((a, b) => b.localeCompare(a));
+    }, [employeePayslips]);
+
+    useEffect(() => {
+      if (payslipYears.length > 0) {
+        setSelectedPayslipYear(Number(payslipYears[0]));
+      }
+    }, [payslipYears]);
 
     const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
     
@@ -70,6 +86,8 @@ const EmployeeDetailModal: React.FC<{
         </div>
       </div>
     );
+    
+    const payslipsForSelectedYear = employeePayslips.filter(p => p.period.startsWith(selectedPayslipYear.toString()));
 
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
@@ -77,7 +95,7 @@ const EmployeeDetailModal: React.FC<{
                 {/* Header */}
                  <div className="p-5 pt-8 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 text-center md:text-left relative">
                     <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
-                    <div className="flex flex-col md:flex-row items-center gap-4">
+                    <div className="flex flex-1 min-w-0 flex-col md:flex-row items-center gap-4">
                         {employee.profilePhotoUrl ? (
                             <img
                                 src={employee.profilePhotoUrl}
@@ -154,28 +172,63 @@ const EmployeeDetailModal: React.FC<{
                         </>
                     )}
                     {activeTab === 'dokumen' && (
-                        <DetailSection title="Dokumen Tersimpan" grid={false}>
-                            {renderDocumentLink("PKWT New Hire", employee.documents?.pkwtNewHire)}
-                            {renderDocumentLink("PKWT Perpanjangan", employee.documents?.pkwtExtension)}
-                            {renderDocumentLink("Surat Peringatan (SP)", employee.documents?.spLetter)}
-                        </DetailSection>
+                       <>
+                          <DetailSection title="Dokumen Utama" grid={false}>
+                              {renderDocumentLink("PKWT New Hire", employee.documents?.pkwtNewHire)}
+                              {renderDocumentLink("Surat Peringatan (SP)", employee.documents?.spLetter)}
+                          </DetailSection>
+                          <DetailSection title="Riwayat Kontrak Perpanjangan" grid={false}>
+                              {contractHistory.length > 0 ? contractHistory.map(doc => (
+                                  <a key={doc.id} href={doc.fileUrl} download={getFileNameFromUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
+                                      <div className="flex items-center space-x-3 min-w-0">
+                                          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                          <div>
+                                            <p className="font-semibold text-sm text-slate-700 truncate">{doc.name}</p>
+                                            <p className="text-xs text-slate-500">
+                                                {new Date(doc.startDate).toLocaleDateString('id-ID')} - {new Date(doc.endDate).toLocaleDateString('id-ID')}
+                                            </p>
+                                          </div>
+                                      </div>
+                                      <Download className="w-5 h-5 text-slate-400 ml-2" />
+                                  </a>
+                              )) : (
+                                  <p className="text-center text-base text-slate-400 italic py-4">Belum ada riwayat perpanjangan kontrak.</p>
+                              )}
+                          </DetailSection>
+                        </>
                     )}
                     {activeTab === 'slip gaji' && (
-                        <DetailSection title={`Histori Slip Gaji (${employeePayslips.length})`} grid={false}>
-                            {employeePayslips.length > 0 ? (
-                                employeePayslips.map(slip => (
-                                    <a key={slip.id} href={slip.fileUrl} download={`slip-gaji-${employee.fullName}-${slip.period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
-                                        <div className="flex items-center space-x-3 min-w-0">
-                                            <Receipt className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                                            <span className="font-semibold text-sm text-slate-700 truncate">Slip Gaji {formatPeriod(slip.period)}</span>
-                                        </div>
-                                        <Download className="w-5 h-5 text-slate-400 ml-2" />
-                                    </a>
-                                ))
-                            ) : (
-                                <p className="text-center text-base text-slate-400 italic py-8">Belum ada data slip gaji untuk Anda.</p>
-                            )}
-                        </DetailSection>
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase">Histori Slip Gaji</h4>
+                                <select value={selectedPayslipYear} onChange={e => setSelectedPayslipYear(Number(e.target.value))} className="font-semibold text-sm bg-slate-100 border-slate-200 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500">
+                                    {payslipYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                {MONTH_NAMES.map((month, index) => {
+                                    const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`;
+                                    const payslipForMonth = employeePayslips.find(p => p.period === period);
+                                    
+                                    if (payslipForMonth) {
+                                        return (
+                                            <a key={month} href={payslipForMonth.fileUrl} download={`slipgaji-${employee.id}-${period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center text-center p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors group">
+                                                <Download className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
+                                                <span className="font-bold text-sm text-blue-700">{month}</span>
+                                            </a>
+                                        );
+                                    } else {
+                                        return (
+                                            <div key={month} className="flex flex-col items-center justify-center text-center p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-not-allowed opacity-60">
+                                                <FileX className="w-5 h-5 text-slate-400 mb-1" />
+                                                <span className="font-semibold text-sm text-slate-500">{month}</span>
+                                            </div>
+                                        );
+                                    }
+                                })}
+                            </div>
+                             {payslipsForSelectedYear.length === 0 && <p className="text-center text-base text-slate-400 italic py-8">Tidak ada data slip gaji untuk tahun {selectedPayslipYear}.</p>}
+                        </div>
                     )}
                 </div>
             </div>
@@ -258,16 +311,18 @@ const PublicEmployeeCard: React.FC<{
   onView: () => void
 }> = ({ employee, clientName, onView }) => (
   <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300 text-center">
-      <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md mb-4 mx-auto" />
+    <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md mb-4 mx-auto" />
+    <div className="w-full min-w-0">
       <h3 className="font-bold text-lg text-slate-800 truncate">{employee.fullName}</h3>
       <p className="text-sm text-slate-400 font-mono">{employee.id}</p>
       <div className="flex items-center justify-center space-x-1.5 mt-1">
           <MapPin className="w-4 h-4 text-slate-400" />
           <p className="text-sm text-slate-500 truncate">{employee.branch}</p>
       </div>
-      <button onClick={onView} className="mt-4 w-full bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-lg hover:bg-blue-100 transition-colors">
-          Lihat Detail
-      </button>
+    </div>
+    <button onClick={onView} className="mt-4 w-full bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-lg hover:bg-blue-100 transition-colors">
+        Lihat Detail
+    </button>
   </div>
 );
 

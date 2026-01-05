@@ -31,6 +31,14 @@ export interface Client {
   name: string;
 }
 
+export interface ContractDocument {
+  id: string; // unique id for the document, e.g., uuid
+  name: string; // e.g., "PKWT Perpanjangan 2"
+  startDate: string; // ISO string date
+  endDate: string; // ISO string date
+  fileUrl: string;
+}
+
 export interface Employee {
   id: string; // NIK Karyawan
   swaproId: string; // NIK SWAPRO
@@ -62,8 +70,8 @@ export interface Employee {
   profilePhotoUrl?: string;
   documents: {
     pkwtNewHire?: string;
-    pkwtExtension?: string;
     spLetter?: string;
+    contractHistory?: ContractDocument[];
   };
 }
 
@@ -102,7 +110,7 @@ export interface Payslip {
     id: string; // e.g., "K001-2024-07"
     employeeId: string;
     period: string; // YYYY-MM
-    fileUrl: string; // data:application/pdf;base64,...
+    fileUrl: string;
 }
 
 export interface AppState {

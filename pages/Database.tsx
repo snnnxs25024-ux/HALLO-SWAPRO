@@ -27,10 +27,10 @@ import {
   Loader2,
   Cake,
   GraduationCap,
-  // Fix: Import Calendar icon
   Calendar,
+  FileX,
 } from 'lucide-react';
-import { Employee, Client, EmployeeStatus, User, UserRole, Payslip, EDUCATION_LEVELS } from '../types';
+import { Employee, Client, EmployeeStatus, User, UserRole, Payslip, EDUCATION_LEVELS, ContractDocument } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { useNotifier } from '../components/Notifier';
 
@@ -74,6 +74,7 @@ const CSV_HEADER_MAPPING: Record<string, string> = {
     'Status (Active/Resigned/Terminated)': 'status',
     'URL Foto Profil': 'profilePhotoUrl'
 };
+const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 
 // --- HELPER FUNCTIONS ---
@@ -82,7 +83,8 @@ const getFileNameFromUrl = (url?: string): string => {
     try {
         const urlObj = new URL(url);
         const pathSegments = urlObj.pathname.split('/');
-        return decodeURIComponent(pathSegments[pathSegments.length - 1]);
+        const fileName = decodeURIComponent(pathSegments[pathSegments.length - 1]);
+        return fileName.split('/').pop() || 'nama_file_tidak_valid.bin';
     } catch (e) {
         return 'nama_file_tidak_valid.bin';
     }
@@ -96,19 +98,6 @@ const formatPeriod = (period: string) => {
     });
 };
 
-const dataURLtoFile = (dataurl: string, filename: string): File => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)![1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, { type: mime });
-}
-
-
 // --- SUB-COMPONENTS ---
 export const EmployeeCard: React.FC<{ 
   employee: Employee, 
@@ -121,7 +110,7 @@ export const EmployeeCard: React.FC<{
   <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300">
     <div className="flex flex-col items-center text-center">
       <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full flex-shrink-0 object-cover border-4 border-white shadow-md mb-4" />
-      <div className="flex-1 min-w-0">
+      <div className="w-full flex-1 min-w-0">
         <h3 className="font-bold text-lg text-slate-800 truncate">{employee.fullName}</h3>
         <p className="text-sm text-slate-400 font-mono">{employee.id}</p>
         <div className="flex items-center justify-center space-x-1.5 mt-1">
@@ -285,6 +274,7 @@ export const EmployeeModal: React.FC<{
     const [filePayloads, setFilePayloads] = useState<Record<string, File | null>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('profil');
+    const [selectedPayslipYear, setSelectedPayslipYear] = useState(new Date().getFullYear());
     const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
     const notifier = useNotifier();
     
@@ -294,19 +284,33 @@ export const EmployeeModal: React.FC<{
             .filter(p => p.employeeId === employeeData.id)
             .sort((a, b) => b.period.localeCompare(a.period));
     }, [payslips, employeeData]);
+    
+    const payslipYears = useMemo(() => {
+        const years = new Set<string>(employeePayslips.map(p => p.period.substring(0, 4)));
+        const currentYear = new Date().getFullYear().toString();
+        years.add(currentYear);
+        return Array.from(years).sort((a, b) => b.localeCompare(a));
+    }, [employeePayslips]);
 
     React.useEffect(() => {
-        setFormData(employeeData || {
+        const initialData = employeeData || {
             gender: 'Laki-laki',
             status: EmployeeStatus.ACTIVE,
             lastEducation: 'SMA/SMK',
             contractNumber: 1,
             bankAccount: { number: '', holderName: '', bankName: '' },
             bpjs: { ketenagakerjaan: '', kesehatan: '' },
-            documents: {}
-        });
+            documents: { contractHistory: [] }
+        };
+        if (!initialData.documents) {
+            initialData.documents = { contractHistory: [] };
+        } else if (!initialData.documents.contractHistory) {
+            initialData.documents.contractHistory = [];
+        }
+        setFormData(initialData);
         setFilePayloads({});
         setActiveTab('profil');
+        setSelectedPayslipYear(new Date().getFullYear());
     }, [employeeData, isOpen]);
 
     if (!isOpen) return null;
@@ -344,7 +348,53 @@ export const EmployeeModal: React.FC<{
     const handleFileChange = (name: string, file: File | null) => {
         setFilePayloads(prev => ({ ...prev, [name]: file }));
     };
+    
+    const updateLatestEoc = (history: ContractDocument[]) => {
+        if (!history || history.length === 0) return;
+        
+        const latestContract = history.reduce((latest, current) => {
+            const latestDate = new Date(latest.endDate);
+            const currentDate = new Date(current.endDate);
+            return currentDate > latestDate ? current : latest;
+        });
 
+        if (latestContract.endDate) {
+            setFormData(prev => ({ ...prev, endDate: latestContract.endDate }));
+        }
+    };
+    
+    const handleContractChange = (id: string, field: keyof ContractDocument, value: string) => {
+        const updatedHistory = (formData.documents?.contractHistory || []).map(doc => 
+            doc.id === id ? { ...doc, [field]: value } : doc
+        );
+        setFormData(prev => ({...prev, documents: {...prev.documents, contractHistory: updatedHistory}}));
+        
+        if(field === 'endDate') {
+            updateLatestEoc(updatedHistory);
+        }
+    };
+
+    const handleContractFileChange = (id: string, file: File | null) => {
+        setFilePayloads(prev => ({ ...prev, [`contract-${id}`]: file }));
+    };
+    
+    const addContractRow = () => {
+        const newContract: ContractDocument = {
+            id: `new-${Date.now()}`,
+            name: '',
+            startDate: '',
+            endDate: '',
+            fileUrl: '',
+        };
+        const updatedHistory = [...(formData.documents?.contractHistory || []), newContract];
+        setFormData(prev => ({...prev, documents: {...prev.documents, contractHistory: updatedHistory}}));
+    };
+
+    const removeContractRow = (id: string) => {
+         const updatedHistory = (formData.documents?.contractHistory || []).filter(doc => doc.id !== id);
+         setFormData(prev => ({...prev, documents: {...prev.documents, contractHistory: updatedHistory}}));
+         updateLatestEoc(updatedHistory);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -354,32 +404,42 @@ export const EmployeeModal: React.FC<{
             if (!employeeId) throw new Error("NIK Karyawan wajib diisi.");
 
             const finalData = { ...formData };
+            if (!finalData.documents) finalData.documents = {};
             
             // Handle profile photo upload
             if (filePayloads.profilePhoto) {
                 const file = filePayloads.profilePhoto;
                 const filePath = `profile-photos/${employeeId}-${Date.now()}.${file.name.split('.').pop()}`;
-                const publicUrl = await uploadFile('swapro_files', filePath, file);
-                finalData.profilePhotoUrl = publicUrl;
+                finalData.profilePhotoUrl = await uploadFile('swapro_files', filePath, file);
             }
-
-            // Handle document uploads
-            const docUploads = ['documents.pkwtNewHire', 'documents.pkwtExtension', 'documents.spLetter'];
-            for (const docName of docUploads) {
-                if (filePayloads[docName]) {
-                    const file = filePayloads[docName]!;
+            
+            // Handle static document uploads
+            const staticDocs = ['pkwtNewHire', 'spLetter'];
+            for (const docKey of staticDocs) {
+                const payloadKey = `documents.${docKey}`;
+                if (filePayloads[payloadKey]) {
+                    const file = filePayloads[payloadKey]!;
                     const filePath = `documents/${employeeId}/${file.name}`;
-                    const publicUrl = await uploadFile('swapro_files', filePath, file);
-                    if (!finalData.documents) finalData.documents = {};
-                    finalData.documents[docName.split('.')[1] as keyof Employee['documents']] = publicUrl;
+                    finalData.documents[docKey as keyof Employee['documents']] = await uploadFile('swapro_files', filePath, file);
                 }
             }
 
+            // Handle contract history uploads
+            if (finalData.documents.contractHistory) {
+                for (let i = 0; i < finalData.documents.contractHistory.length; i++) {
+                    const contract = finalData.documents.contractHistory[i];
+                    const filePayloadKey = `contract-${contract.id}`;
+                    if (filePayloads[filePayloadKey]) {
+                        const file = filePayloads[filePayloadKey]!;
+                        const filePath = `documents/${employeeId}/contracts/${contract.id}-${file.name}`;
+                        contract.fileUrl = await uploadFile('swapro_files', filePath, file);
+                    }
+                }
+            }
+            
             await onSave(finalData as Employee);
         } catch (error: any) {
             console.error("Failed to save employee:", error);
-            // FIX: Provide a more specific error message if the Supabase Storage bucket is not found.
-            // This guides the user to fix the backend configuration.
             if (error.message && error.message.toLowerCase().includes('bucket not found')) {
                 notifier.addNotification('Gagal Unggah: "swapro_files" bucket untuk file tidak ditemukan di Supabase Storage.', 'error');
             } else {
@@ -432,13 +492,16 @@ export const EmployeeModal: React.FC<{
     const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
 
     if (isViewMode && employeeData) {
+        const contractHistory = employeeData.documents?.contractHistory || [];
+        const payslipsForSelectedYear = employeePayslips.filter(p => p.period.startsWith(selectedPayslipYear.toString()));
+
         return (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
                 <div className="bg-white rounded-none md:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn">
                     {/* Header */}
                     <div className="p-5 pt-8 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 text-center md:text-left relative">
                         <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
-                        <div className="flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex flex-1 min-w-0 flex-col md:flex-row items-center gap-4">
                             {employeeData.profilePhotoUrl ? (
                                 <img
                                     src={employeeData.profilePhotoUrl}
@@ -523,28 +586,63 @@ export const EmployeeModal: React.FC<{
                             </>
                         )}
                         {activeTab === 'dokumen' && (
-                            <DetailSection title="Dokumen Tersimpan" grid={false}>
-                                {renderDocumentLink("PKWT New Hire", employeeData.documents?.pkwtNewHire)}
-                                {renderDocumentLink("PKWT Perpanjangan", employeeData.documents?.pkwtExtension)}
-                                {renderDocumentLink("Surat Peringatan (SP)", employeeData.documents?.spLetter)}
-                            </DetailSection>
+                            <>
+                              <DetailSection title="Dokumen Utama" grid={false}>
+                                  {renderDocumentLink("PKWT New Hire", employeeData.documents?.pkwtNewHire)}
+                                  {renderDocumentLink("Surat Peringatan (SP)", employeeData.documents?.spLetter)}
+                              </DetailSection>
+                              <DetailSection title="Riwayat Kontrak Perpanjangan" grid={false}>
+                                  {contractHistory.length > 0 ? contractHistory.map(doc => (
+                                      <a key={doc.id} href={doc.fileUrl} download={getFileNameFromUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
+                                          <div className="flex items-center space-x-3 min-w-0">
+                                              <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                              <div>
+                                                <p className="font-semibold text-sm text-slate-700 truncate">{doc.name}</p>
+                                                <p className="text-xs text-slate-500">
+                                                    {new Date(doc.startDate).toLocaleDateString('id-ID')} - {new Date(doc.endDate).toLocaleDateString('id-ID')}
+                                                </p>
+                                              </div>
+                                          </div>
+                                          <Download className="w-5 h-5 text-slate-400 ml-2" />
+                                      </a>
+                                  )) : (
+                                      <p className="text-center text-base text-slate-400 italic py-4">Belum ada riwayat perpanjangan kontrak.</p>
+                                  )}
+                              </DetailSection>
+                            </>
                         )}
                         {activeTab === 'slip gaji' && (
-                            <DetailSection title={`Histori Slip Gaji (${employeePayslips.length})`} grid={false}>
-                                {employeePayslips.length > 0 ? (
-                                    employeePayslips.map(slip => (
-                                        <a key={slip.id} href={slip.fileUrl} download={`slip-gaji-${employeeData.fullName}-${slip.period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
-                                            <div className="flex items-center space-x-3 min-w-0">
-                                                <Receipt className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                                                <span className="font-semibold text-sm text-slate-700 truncate">Slip Gaji {formatPeriod(slip.period)}</span>
-                                            </div>
-                                            <Download className="w-5 h-5 text-slate-400 ml-2" />
-                                        </a>
-                                    ))
-                                ) : (
-                                    <p className="text-center text-base text-slate-400 italic py-8">Belum ada data slip gaji untuk karyawan ini.</p>
-                                )}
-                            </DetailSection>
+                           <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase">Histori Slip Gaji</h4>
+                                    <select value={selectedPayslipYear} onChange={e => setSelectedPayslipYear(Number(e.target.value))} className="font-semibold text-sm bg-slate-100 border-slate-200 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500">
+                                        {payslipYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    {MONTH_NAMES.map((month, index) => {
+                                        const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`;
+                                        const payslipForMonth = employeePayslips.find(p => p.period === period);
+                                        
+                                        if (payslipForMonth) {
+                                            return (
+                                                <a key={month} href={payslipForMonth.fileUrl} download={`slipgaji-${employeeData.id}-${period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center text-center p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors group">
+                                                    <Download className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
+                                                    <span className="font-bold text-sm text-blue-700">{month}</span>
+                                                </a>
+                                            );
+                                        } else {
+                                            return (
+                                                <div key={month} className="flex flex-col items-center justify-center text-center p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-not-allowed opacity-60">
+                                                    <FileX className="w-5 h-5 text-slate-400 mb-1" />
+                                                    <span className="font-semibold text-sm text-slate-500">{month}</span>
+                                                </div>
+                                            );
+                                        }
+                                    })}
+                                </div>
+                                 {payslipsForSelectedYear.length === 0 && <p className="text-center text-base text-slate-400 italic py-8">Tidak ada data slip gaji untuk tahun {selectedPayslipYear}.</p>}
+                           </div>
                         )}
                     </div>
                      <div className="p-2 flex md:hidden items-center justify-around gap-2 bg-slate-100 border-t border-gray-200">
@@ -653,9 +751,44 @@ export const EmployeeModal: React.FC<{
                       <div>
                           <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Dokumen (Max 5MB)</h4>
                           <div className="space-y-4">
-                              <FileUploadField label="PKWT New Hire" name="documents.pkwtNewHire" value={formData.documents?.pkwtNewHire} onChange={handleFileChange} />
-                              <FileUploadField label="PKWT Perpanjangan" name="documents.pkwtExtension" value={formData.documents?.pkwtExtension} onChange={handleFileChange} />
-                              <FileUploadField label="Surat SP" name="documents.spLetter" value={formData.documents?.spLetter} onChange={handleFileChange} />
+                              <FileUploadField label="PKWT New Hire" name="documents.pkwtNewHire" value={formData.documents?.pkwtNewHire} onChange={(name, file) => handleFileChange(name, file)} />
+                              <FileUploadField label="Surat SP" name="documents.spLetter" value={formData.documents?.spLetter} onChange={(name, file) => handleFileChange(name, file)} />
+                          </div>
+                      </div>
+                      
+                      {/* --- NEW DYNAMIC CONTRACT HISTORY SECTION --- */}
+                      <div>
+                          <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Riwayat Kontrak Perpanjangan</h4>
+                          <div className="space-y-4">
+                              {(formData.documents?.contractHistory || []).map((doc, index) => (
+                                  <div key={doc.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 relative">
+                                      <button type="button" onClick={() => removeContractRow(doc.id)} className="absolute top-2 right-2 p-1 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded-full">
+                                          <Trash2 className="w-4 h-4" />
+                                      </button>
+                                      <input
+                                          type="text"
+                                          placeholder="Nama Kontrak (e.g., Perpanjangan K2)"
+                                          value={doc.name}
+                                          onChange={e => handleContractChange(doc.id, 'name', e.target.value)}
+                                          className="w-full text-sm font-semibold px-3 py-2 bg-white border border-gray-300 rounded-lg"
+                                      />
+                                      <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                              <label className="text-xs font-medium text-slate-500">Tgl Mulai</label>
+                                              <input type="date" value={doc.startDate} onChange={e => handleContractChange(doc.id, 'startDate', e.target.value)} className="w-full text-sm px-3 py-2 bg-white border border-gray-300 rounded-lg"/>
+                                          </div>
+                                          <div>
+                                              <label className="text-xs font-medium text-slate-500">Tgl Selesai</label>
+                                              <input type="date" value={doc.endDate} onChange={e => handleContractChange(doc.id, 'endDate', e.target.value)} className="w-full text-sm px-3 py-2 bg-white border border-gray-300 rounded-lg"/>
+                                          </div>
+                                      </div>
+                                      <FileUploadField label="File Kontrak" name={`contract-${doc.id}`} value={doc.fileUrl} onChange={(name, file) => handleContractFileChange(doc.id, file)} />
+                                  </div>
+                              ))}
+                               <button type="button" onClick={addContractRow} className="w-full flex items-center justify-center space-x-2 border-2 border-dashed border-slate-300 text-slate-500 font-semibold py-2.5 rounded-lg hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition-colors">
+                                  <Plus className="w-4 h-4" />
+                                  <span>Tambah Riwayat Kontrak</span>
+                              </button>
                           </div>
                       </div>
                   </div>

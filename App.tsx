@@ -220,16 +220,42 @@ const App: React.FC = () => {
     const { data, error } = await supabase.from('payslips').upsert(newPayslips, { onConflict: 'id' });
     if (error) {
         notifier.addNotification(`Gagal menyimpan slip gaji: ${error.message}`, 'error');
-    } else if (data) {
-        const {data: allPayslips, error: fetchError} = await supabase.from('payslips').select('*');
-        if(fetchError) {
-            notifier.addNotification(`Gagal memuat ulang data slip gaji: ${fetchError.message}`, 'error');
-        } else {
-            setState(prev => ({ ...prev, payslips: allPayslips || [] }));
-            notifier.addNotification(`${newPayslips.length} slip gaji berhasil diproses.`, 'success');
-        }
+        return false;
     }
+    
+    // Manually merge new/updated data to avoid full re-fetch
+    const payslipMap = new Map(state.payslips.map(p => [p.id, p]));
+    newPayslips.forEach(p => payslipMap.set(p.id, p));
+    const updatedPayslips = Array.from(payslipMap.values());
+    
+    setState(prev => ({ ...prev, payslips: updatedPayslips }));
+    notifier.addNotification(`${newPayslips.length} slip gaji berhasil diproses.`, 'success');
+    return true;
   };
+  
+  const deletePayslip = async (payslipId: string) => {
+    const payslipToDelete = state.payslips.find(p => p.id === payslipId);
+    if (!payslipToDelete) return;
+
+    // 1. Delete file from storage
+    const filePath = `payslips/${payslipToDelete.period}/${payslipToDelete.employeeId}.pdf`;
+    const { error: storageError } = await supabase.storage.from('swapro_files').remove([filePath]);
+    if (storageError && storageError.message !== 'The resource was not found') {
+        notifier.addNotification(`Gagal menghapus file dari storage: ${storageError.message}`, 'error');
+        return false;
+    }
+
+    // 2. Delete record from database
+    const { error } = await supabase.from('payslips').delete().eq('id', payslipId);
+    if (error) {
+        notifier.addNotification(`Gagal menghapus slip gaji: ${error.message}`, 'error');
+        return false;
+    }
+    setState(prev => ({ ...prev, payslips: prev.payslips.filter(p => p.id !== payslipId) }));
+    notifier.addNotification('Slip gaji berhasil dihapus.', 'success');
+    return true;
+  };
+
 
   // --- CHAT HANDLER ---
   const handleEmployeeChatUpdate = (chats: Record<string, Chat>) => {
@@ -328,6 +354,7 @@ const App: React.FC = () => {
                     employees={state.employees}
                     clients={state.clients}
                     onPayslipsChange={handlePayslipsChange}
+                    onDeletePayslip={deletePayslip}
                   />
                 } />
                 <Route path="/chat" element={
