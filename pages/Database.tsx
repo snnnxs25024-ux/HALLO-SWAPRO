@@ -359,7 +359,7 @@ export const EmployeeModal: React.FC<{
             if (filePayloads.profilePhoto) {
                 const file = filePayloads.profilePhoto;
                 const filePath = `profile-photos/${employeeId}-${Date.now()}.${file.name.split('.').pop()}`;
-                const publicUrl = await uploadFile('public', filePath, file);
+                const publicUrl = await uploadFile('swapro_files', filePath, file);
                 finalData.profilePhotoUrl = publicUrl;
             }
 
@@ -369,7 +369,7 @@ export const EmployeeModal: React.FC<{
                 if (filePayloads[docName]) {
                     const file = filePayloads[docName]!;
                     const filePath = `documents/${employeeId}/${file.name}`;
-                    const publicUrl = await uploadFile('public', filePath, file);
+                    const publicUrl = await uploadFile('swapro_files', filePath, file);
                     if (!finalData.documents) finalData.documents = {};
                     finalData.documents[docName.split('.')[1] as keyof Employee['documents']] = publicUrl;
                 }
@@ -378,7 +378,13 @@ export const EmployeeModal: React.FC<{
             await onSave(finalData as Employee);
         } catch (error: any) {
             console.error("Failed to save employee:", error);
-            notifier.addNotification(`Error: ${error.message}`, 'error');
+            // FIX: Provide a more specific error message if the Supabase Storage bucket is not found.
+            // This guides the user to fix the backend configuration.
+            if (error.message && error.message.toLowerCase().includes('bucket not found')) {
+                notifier.addNotification('Gagal Unggah: "swapro_files" bucket untuk file tidak ditemukan di Supabase Storage.', 'error');
+            } else {
+                notifier.addNotification(`Error: ${error.message}`, 'error');
+            }
         } finally {
             setIsSaving(false);
         }

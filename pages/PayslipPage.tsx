@@ -177,10 +177,10 @@ const PayslipPage: React.FC<PayslipPageProps> = ({ payslips, employees, clients,
                     const pdfBlob = dataURItoBlob(pdfDataUrl);
                     const filePath = `payslips/${row.employeeId}-${row.period}.pdf`;
 
-                    const { error: uploadError } = await supabase.storage.from('public').upload(filePath, pdfBlob, { upsert: true });
+                    const { error: uploadError } = await supabase.storage.from('swapro_files').upload(filePath, pdfBlob, { upsert: true });
                     if(uploadError) throw uploadError;
 
-                    const { data: { publicUrl } } = supabase.storage.from('public').getPublicUrl(filePath);
+                    const { data: { publicUrl } } = supabase.storage.from('swapro_files').getPublicUrl(filePath);
 
                     newPayslips.push({
                         id: `${row.employeeId}-${row.period}`,
