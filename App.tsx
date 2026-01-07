@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip, DocumentRequest, DocumentRequestStatus } from './types';
@@ -16,6 +17,7 @@ import { supabase } from './services/supabaseClient';
 import { Loader } from 'lucide-react';
 import { useNotifier } from './components/Notifier';
 import AudioPlayer from './components/AudioPlayer';
+import Dossier from './pages/Dossier';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
@@ -306,6 +308,9 @@ const App: React.FC = () => {
                 <Route path="/database" element={
                   <Database employees={state.employees} clients={state.clients} payslips={state.payslips} onDataChange={handleEmployeeDataChange} onAddEmployee={addEmployee} onUpdateEmployee={updateEmployee} onDeleteEmployee={deleteEmployee} onResetEmployees={resetEmployees} currentUser={state.currentUser} />
                 } />
+                <Route path="/dossier" element={
+                  <Dossier employees={state.employees} clients={state.clients} currentUser={state.currentUser} onUpdateEmployee={updateEmployee} />
+                } />
                 <Route path="/clients" element={
                   <ClientManagement clients={state.clients} employees={state.employees} onAddClient={addClient} onUpdateClient={updateClient} onDeleteClient={deleteClient} />
                 } />
@@ -332,6 +337,7 @@ const App: React.FC = () => {
                 payslips={state.payslips}
                 documentRequests={state.documentRequests}
                 onRequestDocument={handleCreateDocumentRequest}
+                onUpdateEmployee={updateEmployee}
               />
             } />
             <Route path="*" element={<Landing />} />

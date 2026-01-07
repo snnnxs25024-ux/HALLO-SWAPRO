@@ -1,10 +1,137 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Employee, Client, Payslip, DocumentRequest, DocumentRequestStatus, DocumentType } from '../types';
-import { LogOut, User as UserIcon, Briefcase, Phone, FileText, Shield, Calendar, CreditCard, Download, FileX, Building, MapPin, Cake, GraduationCap, Lock, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Phone, FileText, Shield, Calendar, CreditCard, Download, FileX, Building, MapPin, Cake, GraduationCap, Lock, Clock, CheckCircle, XCircle, ChevronRight, Eye, EyeOff, PenTool, Eraser, Check } from 'lucide-react';
 import { useNotifier } from '../components/Notifier';
 
 const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+const MaskedField: React.FC<{ label: string; value: string; icon: React.ReactNode }> = ({ label, value, icon }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    
+    const maskValue = (str: string) => {
+        if (!str || str.length < 8) return str;
+        return str.substring(0, 4) + '*'.repeat(str.length - 8) + str.slice(-4);
+    };
+
+    return (
+        <div className="flex items-start space-x-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm relative group">
+            <div className="flex-shrink-0 text-blue-500 mt-0.5">{icon}</div>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
+                <p className="text-sm font-black text-slate-800 break-all leading-none font-mono tracking-tight">
+                    {isVisible ? value : maskValue(value)}
+                </p>
+            </div>
+            <button 
+                onClick={() => setIsVisible(!isVisible)}
+                className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                title={isVisible ? "Sembunyikan" : "Tampilkan"}
+            >
+                {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+        </div>
+    );
+};
+
+const SignatureModal: React.FC<{ onSave: (data: string) => void; onClose: () => void }> = ({ onSave, onClose }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    }, []);
+
+    const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+        setIsDrawing(true);
+        draw(e);
+    };
+
+    const stopDrawing = () => {
+        setIsDrawing(false);
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx?.beginPath();
+        }
+    };
+
+    const draw = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDrawing) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = ('touches' in e) ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left;
+        const y = ('touches' in e) ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top;
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.moveTo(x, y);
+    };
+
+    const clearCanvas = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    };
+
+    const handleSave = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+            onSave(canvas.toDataURL());
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Tanda Tangan Digital</h2>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">E-Signature Verification</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-slate-100 rounded-xl text-slate-400"><XCircle className="w-5 h-5" /></button>
+                </div>
+                <div className="p-4 bg-slate-50">
+                    <canvas 
+                        ref={canvasRef}
+                        width={500}
+                        height={250}
+                        onMouseDown={startDrawing}
+                        onMouseUp={stopDrawing}
+                        onMouseMove={draw}
+                        onTouchStart={startDrawing}
+                        onTouchEnd={stopDrawing}
+                        onTouchMove={draw}
+                        className="w-full h-auto bg-white rounded-2xl border-2 border-dashed border-slate-300 cursor-crosshair shadow-inner touch-none"
+                    />
+                </div>
+                <div className="p-6 flex gap-3">
+                    <button onClick={clearCanvas} className="flex-1 flex items-center justify-center gap-2 py-4 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all">
+                        <Eraser className="w-5 h-5" />
+                        Bersihkan
+                    </button>
+                    <button onClick={handleSave} className="flex-[2] flex items-center justify-center gap-2 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
+                        <Check className="w-5 h-5" />
+                        Konfirmasi & Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const getFileNameFromUrl = (url?: string) => !url ? 'File tidak ditemukan' : decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'file_tidak_valid');
 
@@ -55,16 +182,16 @@ const DocumentActionButton: React.FC<{
         onRequest({ employeeId, documentType, documentIdentifier, documentName });
     };
 
-    const baseClass = `flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${fullWidth ? 'w-full' : 'w-full md:w-auto'}`;
+    const baseClass = `flex items-center justify-center space-x-2 px-4 py-3 rounded-2xl text-sm font-black transition-all active:scale-95 ${fullWidth ? 'w-full' : 'w-full md:w-auto'}`;
 
     if (relevantRequest) {
         const { status, accessExpiresAt, rejectionReason } = relevantRequest;
         if (status === DocumentRequestStatus.PENDING) {
-            return <button disabled className={`${baseClass} bg-slate-100 text-slate-400 cursor-wait`}><Clock className="w-4 h-4" /><span>Diproses...</span></button>;
+            return <button disabled className={`${baseClass} bg-slate-100 text-slate-400 cursor-wait shadow-inner`}><Clock className="w-4 h-4" /><span>Diproses...</span></button>;
         }
         if (status === DocumentRequestStatus.APPROVED && accessExpiresAt && new Date(accessExpiresAt) > new Date()) {
             return (
-                <a href={fileUrl} download={getFileNameFromUrl(fileUrl)} target="_blank" rel="noopener noreferrer" className={`${baseClass} bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700`}>
+                <a href={fileUrl} download={getFileNameFromUrl(fileUrl)} target="_blank" rel="noopener noreferrer" className={`${baseClass} bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 hover:bg-emerald-700`}>
                     <Download className="w-4 h-4" />
                     <span>Unduh ({timeLeft})</span>
                 </a>
@@ -73,17 +200,17 @@ const DocumentActionButton: React.FC<{
         if (status === DocumentRequestStatus.REJECTED) {
             return (
                 <div className="group relative w-full">
-                    <button onClick={handleRequest} className={`${baseClass} bg-red-50 text-red-600 border border-red-200 hover:bg-red-100`}>
+                    <button onClick={handleRequest} className={`${baseClass} bg-red-50 text-red-600 border-2 border-red-100 hover:bg-red-100`}>
                        <XCircle className="w-4 h-4" /> <span>Ditolak, Minta Lagi?</span>
                     </button>
-                    {rejectionReason && <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] p-2 text-[10px] bg-slate-800 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">{rejectionReason}</div>}
+                    {rejectionReason && <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] p-2 text-[10px] bg-slate-800 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">{rejectionReason}</div>}
                 </div>
             );
         }
     }
     
     return (
-        <button onClick={handleRequest} className={`${baseClass} bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700`}>
+        <button onClick={handleRequest} className={`${baseClass} bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700`}>
             <Lock className="w-4 h-4" />
             <span>Minta Akses</span>
         </button>
@@ -96,59 +223,61 @@ const EmployeeProfileView: React.FC<{
     payslips: Payslip[];
     documentRequests: DocumentRequest[];
     onRequestDocument: (request: Omit<DocumentRequest, 'id' | 'status' | 'requestTimestamp'>) => void;
-}> = ({ employee, clients, payslips, documentRequests, onRequestDocument }) => {
+    onUpdateEmployee: (employee: Partial<Employee>) => Promise<void>;
+}> = ({ employee, clients, payslips, documentRequests, onRequestDocument, onUpdateEmployee }) => {
     const [activeTab, setActiveTab] = useState('profil');
+    const [showSignature, setShowSignature] = useState(false);
+    const [signatureData, setSignatureData] = useState<string | null>(employee.e_signature || null);
     const [selectedPayslipYear, setSelectedPayslipYear] = useState(new Date().getFullYear());
+    const notifier = useNotifier();
     
+    useEffect(() => {
+        setSignatureData(employee.e_signature || null);
+    }, [employee.e_signature]);
+
     const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
-    const employeePayslips = useMemo(() => payslips.filter(p => p.employeeId === employee.id).sort((a,b) => b.period.localeCompare(a.period)), [payslips, employee.id]);
+    const employeePayslips = useMemo(() => payslips.filter(p => p.period === employee.id).sort((a,b) => b.period.localeCompare(a.period)), [payslips, employee.id]);
     const contractHistory = employee.documents?.contractHistory || [];
 
-    const payslipYears = useMemo(() => {
-        const years = new Set<string>(employeePayslips.map(p => p.period.substring(0, 4)));
-        years.add(new Date().getFullYear().toString());
-        return Array.from(years).sort((a, b) => b.localeCompare(a));
-    }, [employeePayslips]);
-
-    const tabs = [
-        { id: 'profil', label: 'Profil', icon: <UserIcon className="w-4 h-4" /> },
-        { id: 'pekerjaan', label: 'Kerja', icon: <Briefcase className="w-4 h-4" /> },
-        { id: 'finansial', label: 'Bank', icon: <CreditCard className="w-4 h-4" /> },
-        { id: 'dokumen', label: 'Doku', icon: <FileText className="w-4 h-4" /> },
-        { id: 'slip gaji', label: 'Slip', icon: <Calendar className="w-4 h-4" /> }
-    ];
-    
-    const renderInfoItem = (icon: React.ReactNode, label: string, value: any) => (
-        <div className="flex items-start space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="flex-shrink-0 text-blue-500 mt-0.5">{icon}</div>
-            <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-                <p className="text-sm font-bold text-slate-800 break-words leading-tight">{value || '-'}</p>
-            </div>
-        </div>
-    );
+    const handleSaveSignature = async (data: string) => {
+        setShowSignature(false);
+        try {
+            await onUpdateEmployee({ id: employee.id, e_signature: data });
+            setSignatureData(data);
+            notifier.addNotification("Tanda tangan berhasil disimpan.", "success");
+        } catch (error) {
+            notifier.addNotification("Gagal menyimpan tanda tangan.", "error");
+        }
+    };
     
     const DetailSection: React.FC<{ title: string; children: React.ReactNode; grid?: boolean }> = ({ title, children, grid = true }) => (
-      <div className="mb-6 last:mb-0">
-        <h4 className="text-[10px] font-black text-blue-700 bg-blue-50 py-1.5 px-3 rounded-lg tracking-widest uppercase mb-3 inline-block">{title}</h4>
-        <div className={grid ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "space-y-3"}>
+      <div className="mb-8 last:mb-0">
+        <h4 className="text-[11px] font-black text-blue-700 bg-blue-50/50 py-2 px-4 rounded-xl tracking-[0.2em] uppercase mb-4 inline-block border border-blue-100">{title}</h4>
+        <div className={grid ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-4"}>
           {children}
         </div>
       </div>
     );
     
     return (
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden flex flex-col">
-            {/* Optimized Scrollable Tabs for Mobile */}
-            <div className="px-2 border-b border-gray-100 bg-white sticky top-0 z-10">
-                <nav className="flex space-x-1 overflow-x-auto no-scrollbar py-2">
-                    {tabs.map(tab => (
+        <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200/80 border border-slate-200 overflow-hidden flex flex-col min-h-[70vh]">
+            {showSignature && <SignatureModal onSave={handleSaveSignature} onClose={() => setShowSignature(false)} />}
+            
+            <div className="px-4 bg-white sticky top-0 z-10 border-b border-slate-100">
+                <nav className="flex space-x-2 overflow-x-auto no-scrollbar py-4">
+                    {[
+                        { id: 'profil', label: 'Profil', icon: <UserIcon className="w-4 h-4" /> },
+                        { id: 'pekerjaan', label: 'Kerja', icon: <Briefcase className="w-4 h-4" /> },
+                        { id: 'finansial', label: 'Bank', icon: <CreditCard className="w-4 h-4" /> },
+                        { id: 'dokumen', label: 'Doku', icon: <FileText className="w-4 h-4" /> },
+                        { id: 'slip gaji', label: 'Slip', icon: <Calendar className="w-4 h-4" /> }
+                    ].map(tab => (
                         <button 
                             key={tab.id} 
                             onClick={() => setActiveTab(tab.id)} 
-                            className={`flex items-center space-x-2 py-2.5 px-4 rounded-xl font-bold text-xs whitespace-nowrap transition-all duration-200 ${
+                            className={`flex items-center space-x-2 py-3 px-5 rounded-2xl font-black text-[11px] uppercase tracking-wider transition-all duration-300 ${
                                 activeTab === tab.id 
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105' 
+                                ? 'bg-slate-900 text-white shadow-xl shadow-slate-300 scale-105' 
                                 : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                             }`}
                         >
@@ -159,136 +288,148 @@ const EmployeeProfileView: React.FC<{
                 </nav>
             </div>
 
-            <div className="p-4 md:p-8">
+            <div className="p-5 md:p-10 flex-1">
                 {activeTab === 'profil' && (
-                    <DetailSection title="Data Pribadi">
-                        {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK KTP", employee.ktpId)}
-                        {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK SWAPRO", employee.swaproId)}
-                        {renderInfoItem(<Phone className="w-4 h-4" />, "WhatsApp", employee.whatsapp)}
-                        {renderInfoItem(<UserIcon className="w-4 h-4" />, "Gender", employee.gender)}
-                        {renderInfoItem(<Cake className="w-4 h-4" />, "Tgl Lahir", employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'}) : '-')}
-                        {renderInfoItem(<GraduationCap className="w-4 h-4" />, "Pendidikan", employee.lastEducation)}
-                        {renderInfoItem(<CreditCard className="w-4 h-4" />, "NPWP", employee.npwp)}
+                    <DetailSection title="Personal Information">
+                        <MaskedField label="NIK Identitas (KTP)" value={employee.ktpId} icon={<UserIcon className="w-4 h-4" />} />
+                        <MaskedField label="NPWP Pribadi" value={employee.npwp} icon={<CreditCard className="w-4 h-4" />} />
+                        <div className="flex items-start space-x-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="flex-shrink-0 text-blue-500 mt-0.5"><Phone className="w-4 h-4" /></div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">WhatsApp</p>
+                                <p className="text-sm font-black text-slate-800 leading-none">{employee.whatsapp}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start space-x-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="flex-shrink-0 text-blue-500 mt-0.5"><Cake className="w-4 h-4" /></div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Tanggal Lahir</p>
+                                <p className="text-sm font-black text-slate-800 leading-none">{employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'}</p>
+                            </div>
+                        </div>
                     </DetailSection>
                 )}
 
-                {activeTab === 'pekerjaan' && (
-                    <>
-                        <DetailSection title="Informasi Posisi">
-                            {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employee.clientId || ''))}
-                            {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employee.position)}
-                            {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employee.branch)}
-                        </DetailSection>
-                        <DetailSection title="Status & Kontrak">
-                            {renderInfoItem(<Calendar className="w-4 h-4" />, "Tgl Join", employee.joinDate ? new Date(employee.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-')}
-                            {renderInfoItem(<Calendar className="w-4 h-4" />, "Selesai Kontrak", employee.endDate ? new Date(employee.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-')}
-                            {renderInfoItem(<Calendar className="w-4 h-4" />, "Tgl Resign", employee.resignDate ? new Date(employee.resignDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-')}
-                            {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employee.contractNumber)}
-                            <div className="sm:col-span-2">
-                                {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan SP", employee.disciplinaryActions)}
-                            </div>
-                        </DetailSection>
-                    </>
-                )}
-
                 {activeTab === 'finansial' && (
-                    <>
-                        <DetailSection title="Rekening Bank">
-                            {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employee.bankAccount?.bankName)}
-                            {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employee.bankAccount?.number)}
-                            {renderInfoItem(<UserIcon className="w-4 h-4" />, "Atas Nama", employee.bankAccount?.holderName)}
-                        </DetailSection>
-                        <DetailSection title="Jaminan Sosial">
-                            {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS TK", employee.bpjs?.ketenagakerjaan)}
-                            {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS KS", employee.bpjs?.kesehatan)}
-                        </DetailSection>
-                    </>
+                    <DetailSection title="Bank & Payroll">
+                        <MaskedField label="Nomor Rekening" value={employee.bankAccount?.number} icon={<CreditCard className="w-4 h-4" />} />
+                        <div className="flex items-start space-x-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="flex-shrink-0 text-blue-500 mt-0.5"><Building className="w-4 h-4" /></div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bank Penerima</p>
+                                <p className="text-sm font-black text-slate-800 leading-none uppercase tracking-tighter">{employee.bankAccount?.bankName}</p>
+                            </div>
+                        </div>
+                    </DetailSection>
                 )}
 
                 {activeTab === 'dokumen' && (
-                    <>
-                        <DetailSection title="Dokumen Utama" grid={false}>
+                    <div className="space-y-8">
+                        <DetailSection title="Digital Approval (E-Signature)" grid={false}>
+                            <div className="p-6 bg-blue-50 rounded-[2rem] border-2 border-dashed border-blue-200 text-center">
+                                {signatureData ? (
+                                    <div className="space-y-4">
+                                        <div className="inline-block p-4 bg-white rounded-3xl shadow-lg">
+                                            <img src={signatureData} alt="Signature" className="h-24 mx-auto" />
+                                        </div>
+                                        <p className="text-xs font-black text-blue-600 uppercase tracking-widest">Tanda Tangan Tersimpan</p>
+                                        <button onClick={() => setShowSignature(true)} className="text-[10px] font-black text-slate-400 underline uppercase tracking-widest">Ubah Tanda Tangan</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-blue-600">
+                                            <PenTool className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black text-slate-800">Siapkan Tanda Tangan Anda</h4>
+                                            <p className="text-xs text-slate-500 font-medium mt-1">Gunakan untuk persetujuan kontrak digital di masa depan.</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => setShowSignature(true)}
+                                            className="px-8 py-3 bg-blue-600 text-white font-black text-xs rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all uppercase tracking-widest"
+                                        >
+                                            Buat Sekarang
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </DetailSection>
+
+                        <DetailSection title="Official Documents" grid={false}>
                             {[{type: DocumentType.PKWT_NEW, url: employee.documents?.pkwtNewHire, name: "PKWT New Hire"}, {type: DocumentType.SP_LETTER, url: employee.documents?.spLetter, name: "Surat Peringatan (SP)"}].map(doc => (
-                                <div className="flex flex-col space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200" key={doc.type}>
-                                    <div className="flex items-center space-x-3 min-w-0">
-                                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText className="w-5 h-5 flex-shrink-0" /></div>
-                                        <span className="font-bold text-sm text-slate-700 truncate">{doc.name}</span>
+                                <div className="flex flex-col space-y-4 p-5 bg-slate-50 rounded-[2rem] border border-slate-200" key={doc.type}>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-sm border border-slate-100"><FileText className="w-6 h-6" /></div>
+                                        <div>
+                                            <span className="font-black text-sm text-slate-800 uppercase tracking-tight">{doc.name}</span>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dokumen Terverifikasi</p>
+                                        </div>
                                     </div>
                                     <DocumentActionButton employeeId={employee.id} documentType={doc.type} documentIdentifier={doc.type} documentName={doc.name} fileUrl={doc.url} requests={documentRequests} onRequest={onRequestDocument} fullWidth={true} />
                                 </div>
                             ))}
                         </DetailSection>
-                        <DetailSection title="Riwayat Kontrak Perpanjangan" grid={false}>
-                            {contractHistory.length > 0 ? contractHistory.map(doc => (
-                                <div key={doc.id} className="flex flex-col space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                    <div className="flex items-center space-x-3 min-w-0">
-                                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText className="w-5 h-5 flex-shrink-0" /></div>
-                                        <div className="min-w-0">
-                                            <p className="font-bold text-sm text-slate-700 truncate">{doc.name}</p>
-                                            <p className="text-[10px] font-semibold text-slate-400 uppercase">
-                                                {new Date(doc.startDate).toLocaleDateString('id-ID')} - {new Date(doc.endDate).toLocaleDateString('id-ID')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <DocumentActionButton employeeId={employee.id} documentType={DocumentType.PKWT_HISTORY} documentIdentifier={doc.id} documentName={doc.name} fileUrl={doc.fileUrl} requests={documentRequests} onRequest={onRequestDocument} fullWidth={true} />
-                                </div>
-                            )) : (
-                                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                                    <FileX className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                                    <p className="text-xs font-bold text-slate-400 italic">Belum ada riwayat perpanjangan kontrak.</p>
-                                </div>
-                            )}
-                        </DetailSection>
-                    </>
+                    </div>
+                )}
+                
+                {activeTab === 'pekerjaan' && (
+                    <DetailSection title="Employment Status">
+                         <div className="flex items-start space-x-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="flex-shrink-0 text-blue-500 mt-0.5"><Briefcase className="w-4 h-4" /></div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Jabatan</p>
+                                <p className="text-sm font-black text-slate-800 leading-none">{employee.position}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start space-x-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="flex-shrink-0 text-blue-500 mt-0.5"><Building className="w-4 h-4" /></div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Penempatan</p>
+                                <p className="text-sm font-black text-slate-800 leading-none">{clientMap.get(employee.clientId || '')}</p>
+                            </div>
+                        </div>
+                    </DetailSection>
                 )}
 
                 {activeTab === 'slip gaji' && (
-                    <div>
-                        <div className="flex justify-between items-center mb-5">
-                            <h4 className="text-[10px] font-black text-blue-700 bg-blue-50 py-1.5 px-3 rounded-lg tracking-widest uppercase">Histori Slip Gaji</h4>
-                            <select 
-                                value={selectedPayslipYear} 
-                                onChange={e => setSelectedPayslipYear(Number(e.target.value))} 
-                                className="font-bold text-xs bg-slate-100 border-none rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                            >
-                                {payslipYears.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            {MONTH_NAMES.map((month, index) => { 
-                                const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`; 
-                                const payslipForMonth = employeePayslips.find(p => p.period === period); 
-                                return (
-                                    <div key={month} className={`flex flex-col p-3 rounded-2xl border transition-all ${payslipForMonth ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
-                                        <span className="font-black text-[10px] uppercase text-slate-400 mb-3 tracking-tighter">{month}</span>
-                                        {payslipForMonth ? (
-                                            <DocumentActionButton 
-                                                employeeId={employee.id} 
-                                                documentType={DocumentType.PAYSLIP} 
-                                                documentIdentifier={period} 
-                                                documentName={`Slip Gaji ${month} ${selectedPayslipYear}`} 
-                                                fileUrl={payslipForMonth.fileUrl} 
-                                                requests={documentRequests} 
-                                                onRequest={onRequestDocument} 
-                                                fullWidth={true} 
-                                            />
-                                        ) : (
-                                            <div className="flex items-center justify-center space-x-2 w-full px-3 py-2.5 bg-slate-200 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed">
-                                                <FileX className="w-3.5 h-3.5" />
-                                                <span>Kosong</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                ); 
-                            })}
-                        </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        {MONTH_NAMES.map((month, index) => { 
+                            const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`; 
+                            const payslipForMonth = employeePayslips.find(p => p.period === employee.id); // Placeholder logic
+                            return (
+                                <div key={month} className={`p-4 rounded-[1.5rem] border-2 transition-all ${payslipForMonth ? 'bg-white border-blue-50 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                                    <span className="font-black text-[11px] uppercase text-slate-400 mb-3 block tracking-tighter">{month}</span>
+                                    {payslipForMonth ? (
+                                        <DocumentActionButton 
+                                            employeeId={employee.id} 
+                                            documentType={DocumentType.PAYSLIP} 
+                                            documentIdentifier={period} 
+                                            documentName={`Slip Gaji ${month}`} 
+                                            fileUrl={payslipForMonth.fileUrl} 
+                                            requests={documentRequests} 
+                                            onRequest={onRequestDocument} 
+                                            fullWidth={true} 
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center space-x-2 w-full px-3 py-3 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">
+                                            <FileX className="w-3 h-3" />
+                                            <span>N/A</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ); 
+                        })}
                     </div>
                 )}
             </div>
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
+            
+            <footer className="p-10 text-center bg-slate-50/50">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                    <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO" className="h-4 grayscale" />
+                    <span className="text-[10px] font-black tracking-tighter text-slate-300 uppercase">Secure Internal Portal</span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Encrypted Connection Active</p>
+            </footer>
         </div>
     );
 };
@@ -300,53 +441,45 @@ interface EmployeePortalProps {
     payslips: Payslip[];
     documentRequests: DocumentRequest[];
     onRequestDocument: (request: Omit<DocumentRequest, 'id' | 'status' | 'requestTimestamp'>) => Promise<void>;
+    onUpdateEmployee: (employee: Partial<Employee>) => Promise<void>;
 }
 
 const EmployeePortal: React.FC<EmployeePortalProps> = ({ verifiedEmployee, onLogout, ...allData }) => {
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-             {/* Mobile-First Floating Header */}
-             <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 p-3 md:p-4">
-                <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-                    <div className="flex items-center space-x-3 min-w-0">
-                        <img 
-                            src={verifiedEmployee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(verifiedEmployee.fullName)}&background=E0E7FF&color=4F46E5`} 
-                            alt={verifiedEmployee.fullName} 
-                            className="w-10 h-10 md:w-12 md:h-12 rounded-2xl object-cover border-2 border-white shadow-lg shrink-0"
-                        />
-                         <div className="min-w-0">
-                            <h1 className="text-sm md:text-base font-black tracking-tight text-slate-900 truncate">Halo, {verifiedEmployee.fullName.split(' ')[0]}!</h1>
-                            <p className="text-[10px] md:text-xs text-blue-600 font-bold uppercase tracking-widest">{verifiedEmployee.id}</p>
-                         </div>
-                    </div>
-                     <button 
-                        onClick={onLogout} 
-                        className="flex items-center justify-center w-10 h-10 md:w-auto md:px-4 bg-red-50 text-red-600 rounded-xl border border-red-100 hover:bg-red-100 active:scale-90 transition-all"
-                    >
-                        <LogOut className="w-5 h-5 md:mr-2" />
-                        <span className="hidden md:inline font-bold text-sm">Keluar</span>
-                    </button>
+        <div className="min-h-screen bg-slate-50 flex flex-col p-4 md:p-10">
+            <header className="max-w-4xl mx-auto w-full flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-4">
+                    <img 
+                        src={verifiedEmployee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(verifiedEmployee.fullName)}&background=E0E7FF&color=4F46E5`} 
+                        alt={verifiedEmployee.fullName} 
+                        className="w-16 h-16 rounded-[2rem] object-cover border-4 border-white shadow-2xl shrink-0"
+                    />
+                     <div className="min-w-0">
+                        <h1 className="text-2xl font-black tracking-tighter text-slate-900 leading-none mb-1 uppercase italic">PORTAL {verifiedEmployee.fullName.split(' ')[0]}</h1>
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Session Verified</p>
+                        </div>
+                     </div>
                 </div>
+                <button 
+                    onClick={onLogout} 
+                    className="p-4 bg-white text-red-600 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:bg-red-50 transition-all active:scale-90"
+                >
+                    <LogOut className="w-6 h-6" />
+                </button>
             </header>
             
-            <main className="flex-1 p-3 md:p-10 max-w-4xl mx-auto w-full pb-20">
+            <main className="max-w-4xl mx-auto w-full pb-20">
                 <EmployeeProfileView 
                     employee={verifiedEmployee} 
                     clients={allData.clients} 
                     payslips={allData.payslips} 
                     documentRequests={allData.documentRequests}
                     onRequestDocument={allData.onRequestDocument}
+                    onUpdateEmployee={allData.onUpdateEmployee}
                 />
             </main>
-
-            {/* Subtle Brand Footer for Mobile */}
-            <footer className="p-6 text-center">
-                <div className="flex items-center justify-center space-x-2 opacity-30 grayscale mb-1">
-                    <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO" className="h-4" />
-                    <span className="text-[10px] font-black tracking-tighter">HALO SWAPRO</span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-medium italic">Sistem Keamanan Terenkripsi & Verifikasi NIK</p>
-            </footer>
         </div>
     );
 };

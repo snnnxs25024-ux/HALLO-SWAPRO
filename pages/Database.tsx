@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Search, 
@@ -926,6 +927,8 @@ const ResetConfirmationModal: React.FC<{
 const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDataChange, onAddEmployee, onUpdateEmployee, onDeleteEmployee, onResetEmployees, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClient, setFilterClient] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterEoc, setFilterEoc] = useState('all');
   const [modalState, setModalState] = useState<{ isOpen: boolean, mode: 'add' | 'edit' | 'view', data: Partial<Employee> | null }>({ isOpen: false, mode: 'add', data: null });
   const [currentPage, setCurrentPage] = useState(1);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -936,15 +939,51 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
   const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter(e => 
-      (e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (filterClient === 'all' || e.clientId === filterClient)
-    ).sort((a, b) => a.fullName.localeCompare(b.fullName));
-  }, [employees, searchTerm, filterClient]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return employees.filter(e => {
+      // Search filter
+      const searchMatch = (e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.toLowerCase().includes(searchTerm.toLowerCase()));
+      // Client filter
+      const clientMatch = filterClient === 'all' || e.clientId === filterClient;
+      // Status filter
+      const statusMatch = filterStatus === 'all' || e.status === filterStatus;
+      // EOC filter
+      let eocMatch = true;
+      if (filterEoc !== 'all' && e.endDate) {
+          const endDate = new Date(e.endDate);
+          endDate.setHours(0,0,0,0);
+          
+          if (filterEoc === 'akan-bulan-ini') {
+              eocMatch = endDate.getMonth() === today.getMonth() && endDate.getFullYear() === today.getFullYear() && endDate >= today;
+          } else if (filterEoc === 'akan-bulan-depan') {
+              const nextMonth = new Date(today);
+              nextMonth.setMonth(today.getMonth() + 1);
+              eocMatch = endDate.getMonth() === nextMonth.getMonth() && endDate.getFullYear() === nextMonth.getFullYear();
+          } else if (filterEoc === 'dalam-30') {
+              const thirtyDaysFromNow = new Date(today);
+              thirtyDaysFromNow.setDate(today.getDate() + 30);
+              eocMatch = endDate >= today && endDate <= thirtyDaysFromNow;
+          } else if (filterEoc === 'dalam-90') {
+              const ninetyDaysFromNow = new Date(today);
+              ninetyDaysFromNow.setDate(today.getDate() + 90);
+              eocMatch = endDate >= today && endDate <= ninetyDaysFromNow;
+          } else if (filterEoc === 'sudah-lewat') {
+              eocMatch = endDate < today;
+          }
+      } else if (filterEoc !== 'all' && !e.endDate) {
+          eocMatch = false;
+      }
+
+      return searchMatch && clientMatch && statusMatch && eocMatch;
+
+    }).sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [employees, searchTerm, filterClient, filterStatus, filterEoc]);
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterClient]);
+  }, [searchTerm, filterClient, filterStatus, filterEoc]);
   
   const paginatedEmployees = useMemo(() => {
       const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -1115,6 +1154,15 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
     }
     setIsResetting(false);
   };
+  
+  const eocOptions = [
+    { value: 'all', label: 'Semua End of Contract' },
+    { value: 'akan-bulan-ini', label: 'Akan Berakhir Bulan Ini' },
+    { value: 'akan-bulan-depan', label: 'Akan Berakhir Bulan Depan' },
+    { value: 'dalam-30', label: 'Dalam 30 Hari' },
+    { value: 'dalam-90', label: 'Dalam 90 Hari' },
+    { value: 'sudah-lewat', label: 'Sudah Berakhir' },
+  ];
 
   return (
     <div className="p-4 md:p-10">
@@ -1122,8 +1170,8 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
       <p className="text-base text-slate-500 mt-1">Kelola data terpusat secara efisien.</p>
 
       <div className="my-6 md:my-8 bg-white p-4 rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className="relative flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="relative lg:col-span-3">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input 
                 type="text" 
@@ -1141,8 +1189,23 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
                 <option value="all">Semua Klien</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+             <select 
+                className="px-4 py-3 bg-slate-50 border-slate-200 border rounded-xl focus:ring-2 focus:ring-blue-500 text-base appearance-none"
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value)}
+            >
+                <option value="all">Semua Status</option>
+                {Object.values(EmployeeStatus).map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+             <select 
+                className="px-4 py-3 bg-slate-50 border-slate-200 border rounded-xl focus:ring-2 focus:ring-blue-500 text-base appearance-none"
+                value={filterEoc}
+                onChange={e => setFilterEoc(e.target.value)}
+            >
+                {eocOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 items-stretch gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 items-stretch gap-3 pt-3 border-t border-dashed border-slate-200">
              <button 
                 onClick={handleDownloadTemplate}
                 className="flex items-center justify-center space-x-2 bg-white text-slate-600 border border-slate-300 px-4 py-2.5 rounded-xl font-semibold transition-all hover:bg-slate-50">
@@ -1163,21 +1226,19 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
               <span className="text-base">Export (Full)</span>
             </button>
             <button 
-                onClick={() => handleOpenModal('add')}
-                className="lg:col-span-1 col-span-2 flex items-center justify-center space-x-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95">
-              <Plus className="w-5 h-5" />
-              <span className="text-base">Tambah Karyawan</span>
-            </button>
-        </div>
-        <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
-            <button 
                 onClick={() => setIsResetModalOpen(true)} 
-                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl font-semibold transition-all hover:bg-red-100"
+                className="flex items-center justify-center space-x-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl font-semibold transition-all hover:bg-red-100"
             >
                 <Trash2 className="w-5 h-5" />
-                <span className="text-base">Reset Database</span>
+                <span className="text-base">Reset</span>
             </button>
         </div>
+         <button 
+            onClick={() => handleOpenModal('add')}
+            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95">
+          <Plus className="w-5 h-5" />
+          <span className="text-base">Tambah Karyawan Baru</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -1207,7 +1268,7 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
                 <Search className="w-10 h-10 text-slate-300"/>
             </div>
           <p className="text-slate-500 font-bold text-lg">Tidak ada hasil</p>
-          <p className="text-base text-slate-400 mt-1 px-4">Kata kunci "{searchTerm}" tidak ditemukan di database kami.</p>
+          <p className="text-base text-slate-400 mt-1 px-4">Tidak ada karyawan yang cocok dengan filter yang diterapkan.</p>
         </div>
       )}
       

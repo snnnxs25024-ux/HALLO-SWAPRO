@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -7,7 +8,8 @@ import {
   MessagesSquare,
   Building2,
   Receipt,
-  ShieldCheck, // Icon baru
+  ShieldCheck,
+  FileArchive, // Icon baru
   Menu,
   X
 } from 'lucide-react';
@@ -25,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingRequestCount }
   const links = [
     { to: '/', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
     { to: '/database', icon: <Database className="w-5 h-5" />, label: 'Data Base' },
+    { to: '/dossier', icon: <FileArchive className="w-5 h-5" />, label: 'Pemberkasan' },
     { to: '/clients', icon: <Building2 className="w-5 h-5" />, label: 'Kelola Klien' },
     { to: '/payslips', icon: <Receipt className="w-5 h-5" />, label: 'Slip Gaji' },
     { 

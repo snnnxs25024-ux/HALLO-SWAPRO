@@ -1,3 +1,4 @@
+
 // Fix: Add ADMIN role.
 export enum UserRole {
   PIC = 'PIC',
@@ -37,6 +38,9 @@ export interface ContractDocument {
   startDate: string; // ISO string date
   endDate: string; // ISO string date
   fileUrl: string;
+  isSigned?: boolean;
+  signedAt?: string;
+  picId?: string;
 }
 
 export interface Employee {
@@ -68,6 +72,7 @@ export interface Employee {
   disciplinaryActions: string; // Changed to a single string for simplicity in form
   status: EmployeeStatus;
   profilePhotoUrl?: string;
+  e_signature?: string; // base64 data URL of the signature
   documents: {
     pkwtNewHire?: string;
     spLetter?: string;
