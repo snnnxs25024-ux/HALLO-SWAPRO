@@ -43,6 +43,7 @@ interface DatabaseProps {
   onAddEmployee: (employee: Employee) => Promise<void>;
   onUpdateEmployee: (employee: Employee) => Promise<void>;
   onDeleteEmployee: (employeeId: string) => Promise<void>;
+  onResetEmployees: () => Promise<boolean>;
   currentUser: User;
 }
 
@@ -858,13 +859,77 @@ export const Pagination: React.FC<{
   );
 };
 
+const ResetConfirmationModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    isResetting: boolean;
+}> = ({ isOpen, onClose, onConfirm, isResetting }) => {
+    const [confirmationText, setConfirmationText] = useState('');
+    const CONFIRMATION_PHRASE = "HAPUS SEMUA DATA";
+    const isConfirmed = confirmationText === CONFIRMATION_PHRASE;
+
+    useEffect(() => {
+        if (isOpen) {
+            setConfirmationText('');
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-red-200 overflow-hidden">
+                <div className="p-6 text-center">
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                        <Trash2 className="h-8 w-8 text-red-600" />
+                    </div>
+                    <h3 className="mt-4 text-2xl font-extrabold text-slate-900">Reset Database Karyawan?</h3>
+                    <p className="mt-2 text-base text-slate-500 leading-relaxed">
+                        Anda akan <b className="text-red-600">menghapus seluruh data karyawan secara permanen</b>.
+                        Tindakan ini tidak dapat dibatalkan. File yang sudah diunggah (foto, dokumen) tidak akan terhapus dari server.
+                    </p>
+                    <div className="mt-6 bg-red-50 p-3 rounded-lg">
+                      <p className="text-sm text-slate-600">
+                          Untuk melanjutkan, ketik frasa berikut di bawah ini:
+                          <br />
+                          <strong className="font-mono text-red-700 select-all tracking-widest">{CONFIRMATION_PHRASE}</strong>
+                      </p>
+                      <input
+                          type="text"
+                          value={confirmationText}
+                          onChange={(e) => setConfirmationText(e.target.value)}
+                          className="mt-2 w-full text-center text-base px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 transition shadow-sm"
+                          placeholder="Ketik frasa di sini..."
+                      />
+                    </div>
+                </div>
+                <div className="p-4 border-t border-gray-200 bg-gray-50 flex flex-col-reverse sm:flex-row justify-end gap-3">
+                    <button type="button" onClick={onClose} disabled={isResetting} className="px-6 py-2.5 rounded-lg font-bold text-slate-600 bg-white border border-slate-300 hover:bg-gray-100 transition">Batal</button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={!isConfirmed || isResetting}
+                        className="flex items-center justify-center px-6 py-2.5 rounded-lg font-bold text-white bg-red-600 hover:bg-red-700 transition shadow-lg shadow-red-500/20 disabled:bg-red-300 disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                        {isResetting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Trash2 className="w-5 h-5 mr-2" />}
+                        {isResetting ? 'Menghapus...' : 'Saya Mengerti, Hapus Semua Data'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- MAIN COMPONENT ---
-const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDataChange, onAddEmployee, onUpdateEmployee, onDeleteEmployee, currentUser }) => {
+const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDataChange, onAddEmployee, onUpdateEmployee, onDeleteEmployee, onResetEmployees, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClient, setFilterClient] = useState('all');
   const [modalState, setModalState] = useState<{ isOpen: boolean, mode: 'add' | 'edit' | 'view', data: Partial<Employee> | null }>({ isOpen: false, mode: 'add', data: null });
   const [currentPage, setCurrentPage] = useState(1);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const notifier = useNotifier();
 
@@ -929,7 +994,7 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
   };
 
   const handleExportData = () => {
-    const dataToExport = filteredEmployees; // Export based on current filters
+    const dataToExport = employees; // Export all employees, ignoring filters
     const userFriendlyHeaders = Object.keys(CSV_HEADER_MAPPING);
     const internalKeys = Object.values(CSV_HEADER_MAPPING);
     const csvRows = [userFriendlyHeaders.join(';')];
@@ -952,11 +1017,11 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
     const csvContent = "data:text/csv;charset=utf-8," + encodeURI(csvRows.join('\n'));
     const link = document.createElement("a");
     link.setAttribute("href", csvContent);
-    link.setAttribute("download", "karyawan_export.csv");
+    link.setAttribute("download", "karyawan_export_full.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    notifier.addNotification(`${dataToExport.length} baris data berhasil diekspor.`, 'success');
+    notifier.addNotification(`Seluruh ${dataToExport.length} baris data berhasil diekspor.`, 'success');
   };
   
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1042,6 +1107,15 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
     reader.readAsText(file);
   };
 
+  const handleConfirmReset = async () => {
+    setIsResetting(true);
+    const success = await onResetEmployees();
+    if (success) {
+        setIsResetModalOpen(false);
+    }
+    setIsResetting(false);
+  };
+
   return (
     <div className="p-4 md:p-10">
       <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Database Karyawan</h1>
@@ -1086,13 +1160,22 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
                 onClick={handleExportData}
                 className="flex items-center justify-center space-x-2 bg-white text-slate-600 border border-slate-300 px-4 py-2.5 rounded-xl font-semibold transition-all hover:bg-slate-50">
               <FileUp className="w-5 h-5" />
-              <span className="text-base">Export</span>
+              <span className="text-base">Export (Full)</span>
             </button>
             <button 
                 onClick={() => handleOpenModal('add')}
                 className="lg:col-span-1 col-span-2 flex items-center justify-center space-x-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95">
               <Plus className="w-5 h-5" />
               <span className="text-base">Tambah Karyawan</span>
+            </button>
+        </div>
+        <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
+            <button 
+                onClick={() => setIsResetModalOpen(true)} 
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl font-semibold transition-all hover:bg-red-100"
+            >
+                <Trash2 className="w-5 h-5" />
+                <span className="text-base">Reset Database</span>
             </button>
         </div>
       </div>
@@ -1140,6 +1223,12 @@ const Database: React.FC<DatabaseProps> = ({ employees, clients, payslips, onDat
         onDelete={() => handleDelete(modalState.data?.id as string)}
         currentUser={currentUser}
       />
+       <ResetConfirmationModal
+            isOpen={isResetModalOpen}
+            onClose={() => setIsResetModalOpen(false)}
+            onConfirm={handleConfirmReset}
+            isResetting={isResetting}
+        />
     </div>
   );
 };

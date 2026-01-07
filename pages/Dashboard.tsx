@@ -10,6 +10,7 @@ import {
   Cake,
   GraduationCap,
   PieChart as PieChartIcon,
+  ShieldCheck,
 } from 'lucide-react';
 import { AppState, Employee, EmployeeStatus } from '../types';
 import { 
@@ -28,6 +29,8 @@ import {
   Bar,
   LabelList
 } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+
 
 interface DashboardProps {
   state: AppState;
@@ -86,11 +89,13 @@ const CustomBarTooltip = ({ active, payload, label }: any) => {
 
 
 const Dashboard: React.FC<DashboardProps> = ({ state }) => {
-  const { employees, clients } = state;
+  const { employees, clients, documentRequests } = state;
   const [selectedClient, setSelectedClient] = useState('overall');
   const [timeFilter, setTimeFilter] = useState<'1m' | '6m' | '1y'>('6m');
+  const navigate = useNavigate();
 
   const activeEmployees = useMemo(() => employees.filter(e => e.status === EmployeeStatus.ACTIVE), [employees]);
+  const pendingRequestsCount = useMemo(() => documentRequests.filter(r => r.status === 'PENDING').length, [documentRequests]);
 
   const statCardData = useMemo(() => {
     const now = new Date();
@@ -124,16 +129,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
             weekEnd.setDate(now.getDate() - (i * 7));
             const weekStart = new Date(now);
             weekStart.setDate(now.getDate() - ((i + 1) * 7));
-
             const label = `W-${4-i}`;
-
-            const newHires = relevantEmployees.filter(e => {
-                const joinDate = new Date(e.joinDate);
-                return joinDate >= weekStart && joinDate < weekEnd;
-            }).length;
+            const newHires = relevantEmployees.filter(e => new Date(e.joinDate) >= weekStart && new Date(e.joinDate) < weekEnd).length;
             const resigns = relevantEmployees.filter(e => e.resignDate && e.status === EmployeeStatus.RESIGNED && new Date(e.resignDate) >= weekStart && new Date(e.resignDate) < weekEnd).length;
             const terminated = relevantEmployees.filter(e => e.resignDate && e.status === EmployeeStatus.TERMINATED && new Date(e.resignDate) >= weekStart && new Date(e.resignDate) < weekEnd).length;
-            
             data.push({ month: label, newHire: newHires, resign: resigns, sphk: terminated });
         }
     } else {
@@ -144,17 +143,13 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
             const d = new Date();
             d.setDate(1);
             d.setMonth(now.getMonth() - i);
-            
             const monthKey = months[d.getMonth()];
             const year = d.getFullYear();
-
             const startOfMonth = new Date(year, d.getMonth(), 1);
             const endOfMonth = new Date(year, d.getMonth() + 1, 0);
-
             const newHires = relevantEmployees.filter(e => new Date(e.joinDate) >= startOfMonth && new Date(e.joinDate) <= endOfMonth).length;
             const resigns = relevantEmployees.filter(e => e.resignDate && e.status === EmployeeStatus.RESIGNED && new Date(e.resignDate) >= startOfMonth && new Date(e.resignDate) <= endOfMonth).length;
             const terminated = relevantEmployees.filter(e => e.resignDate && e.status === EmployeeStatus.TERMINATED && new Date(e.resignDate) >= startOfMonth && new Date(e.resignDate) <= endOfMonth).length;
-            
             data.push({ month: monthKey, newHire: newHires, resign: resigns, sphk: terminated });
         }
     }
@@ -162,23 +157,13 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
   }, [employees, selectedClient, timeFilter]);
 
   const demographicData = useMemo(() => {
-    // Gender Data
     const gender: { [key: string]: number } = { 'Laki-laki': 0, 'Perempuan': 0 };
-    activeEmployees.forEach(e => {
-        if (e.gender === 'Laki-laki' || e.gender === 'Perempuan') {
-            gender[e.gender]++;
-        }
-    });
+    activeEmployees.forEach(e => { if (e.gender === 'Laki-laki' || e.gender === 'Perempuan') gender[e.gender]++; });
     const genderData = Object.entries(gender).map(([name, value]) => ({ name, value }));
     const GENDER_COLORS = ['#3b82f6', '#ec4899'];
-
-    // Age Data
     const ageGroups = { '< 25': 0, '25 - 35': 0, '36 - 45': 0, '> 45': 0, 'N/A': 0 };
     activeEmployees.forEach(e => {
-        if (!e.birthDate) {
-            ageGroups['N/A']++;
-            return;
-        }
+        if (!e.birthDate) { ageGroups['N/A']++; return; }
         const age = Math.floor((new Date().getTime() - new Date(e.birthDate).getTime()) / 31557600000);
         if (age < 25) ageGroups['< 25']++;
         else if (age <= 35) ageGroups['25 - 35']++;
@@ -187,107 +172,65 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
     });
     const ageData = Object.entries(ageGroups).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
     const AGE_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#64748b'];
-
-    // Education Data
     const educationLevels: Record<string, number> = { 'SMA/SMK': 0, D3: 0, S1: 0, S2: 0, S3: 0, Lainnya: 0, 'Belum Diisi': 0};
     activeEmployees.forEach(e => {
-        if (e.lastEducation && educationLevels.hasOwnProperty(e.lastEducation)) {
-            educationLevels[e.lastEducation]++;
-        } else {
-            educationLevels['Belum Diisi']++;
-        }
+        if (e.lastEducation && educationLevels.hasOwnProperty(e.lastEducation)) educationLevels[e.lastEducation]++;
+        else educationLevels['Belum Diisi']++;
     });
-    const educationData = Object.entries(educationLevels)
-        .map(([name, value]) => ({ name, value }))
-        .filter(item => item.value > 0)
-        .sort((a,b) => a.value - b.value);
-
+    const educationData = Object.entries(educationLevels).map(([name, value]) => ({ name, value })).filter(item => item.value > 0).sort((a,b) => a.value - b.value);
     const EDUCATION_COLORS = ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb'];
-
     return { genderData, GENDER_COLORS, ageData, AGE_COLORS, educationData, EDUCATION_COLORS };
-
   }, [activeEmployees]);
 
   const recentActivities = useMemo(() => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const newHires = employees
-        .filter(e => new Date(e.joinDate) >= thirtyDaysAgo)
-        .map(e => ({...e, type: 'join'} as const));
-      
-      const resigns = employees
-        .filter(e => e.resignDate && new Date(e.resignDate) >= thirtyDaysAgo)
-        .map(e => ({...e, type: 'resign'} as const));
-
+      const newHires = employees.filter(e => new Date(e.joinDate) >= thirtyDaysAgo).map(e => ({...e, type: 'join'} as const));
+      const resigns = employees.filter(e => e.resignDate && new Date(e.resignDate) >= thirtyDaysAgo).map(e => ({...e, type: 'resign'} as const));
       return [...newHires, ...resigns]
         .sort((a,b) => {
             const dateA = new Date(a.type === 'join' ? a.joinDate : a.resignDate!);
             const dateB = new Date(b.type === 'join' ? b.joinDate : b.resignDate!);
             return dateB.getTime() - dateA.getTime();
-        })
-        .slice(0, 5);
-
+        }).slice(0, 5);
   }, [employees]);
   
-  const timeFilterOptions = [
-    { value: '1m', label: '1 Bulan' },
-    { value: '6m', label: '6 Bulan' },
-    { value: '1y', label: '1 Tahun' },
-  ] as const;
-
+  const timeFilterOptions = [{ value: '1m', label: '1 Bulan' }, { value: '6m', label: '6 Bulan' }, { value: '1y', label: '1 Tahun' }] as const;
   const timeFilterLabel = timeFilterOptions.find(opt => opt.value === timeFilter)?.label || '6 Bulan';
 
   return (
     <div className="p-4 md:p-10 space-y-6 md:space-y-8 min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Dashboard Utama
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Dashboard Utama</h1>
           <p className="text-lg text-slate-500 mt-1">Status operasional SDM hari ini.</p>
         </div>
          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg self-start md:self-center">
           {timeFilterOptions.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setTimeFilter(opt.value)}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-                timeFilter === opt.value
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
+            <button key={opt.value} onClick={() => setTimeFilter(opt.value)} className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${timeFilter === opt.value ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
               {opt.label}
             </button>
           ))}
         </div>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard icon={<Users />} label="Karyawan Aktif" value={activeEmployees.length} color="indigo" />
         <StatCard icon={<UserPlus />} label={`New Hires (${timeFilterLabel})`} value={statCardData.newHires} color="emerald" />
         <StatCard icon={<UserMinus />} label={`Resigned (${timeFilterLabel})`} value={statCardData.resignations} color="rose" />
+        <StatCard icon={<ShieldCheck />} label="Permintaan Dokumen" value={pendingRequestsCount} color="amber" onClick={() => navigate('/approval-center')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
         <div className="lg:col-span-3 bg-white p-4 md:p-6 rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200">
            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                    <TrendingUp className="w-6 h-6" />
-                </div>
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><TrendingUp className="w-6 h-6" /></div>
                 <h3 className="text-xl font-bold text-slate-800">Tren Karyawan ({timeFilterLabel})</h3>
               </div>
-              <select 
-                value={selectedClient} 
-                onChange={e => setSelectedClient(e.target.value)}
-                className="w-full sm:w-auto text-base font-semibold px-4 py-2.5 bg-slate-50 border-slate-200 border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none"
-              >
+              <select value={selectedClient} onChange={e => setSelectedClient(e.target.value)} className="w-full sm:w-auto text-base font-semibold px-4 py-2.5 bg-slate-50 border-slate-200 border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none">
                   <option value="overall">Overall</option>
-                  {clients.map(client => (
-                      <option key={client.id} value={client.id}>{client.name}</option>
-                  ))}
+                  {clients.map(client => (<option key={client.id} value={client.id}>{client.name}</option>))}
               </select>
            </div>
            <div className="h-[280px] md:h-[350px] min-w-0 relative">
@@ -296,12 +239,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 14}} />
                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 14}} allowDecimals={false} />
-                 <Tooltip 
-                    cursor={{fill: '#f9fafb'}} 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                    labelStyle={{ fontWeight: 'bold', marginBottom: '8px' }}
-                    itemStyle={{ fontSize: '14px' }}
-                 />
+                 <Tooltip cursor={{fill: '#f9fafb'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }} labelStyle={{ fontWeight: 'bold', marginBottom: '8px' }} itemStyle={{ fontSize: '14px' }}/>
                  <Legend iconType="circle" iconSize={10} wrapperStyle={{fontSize: "14px", paddingTop: "20px"}} />
                  <Line type="monotone" name="New Hire" dataKey="newHire" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
                  <Line type="monotone" name="Resign" dataKey="resign" stroke="#f59e0b" strokeWidth={3} dot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
@@ -357,93 +295,28 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Wawasan Demografis</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             <ChartCard title="Komposisi Gender" icon={<PieChartIcon className="w-6 h-6" />}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie 
-                            data={demographicData.genderData} 
-                            dataKey="value" 
-                            nameKey="name" 
-                            cx="50%" 
-                            cy="50%" 
-                            outerRadius={80} 
-                            labelLine={false}
-                            label={renderCustomizedPieLabel}
-                        >
-                            {demographicData.genderData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={demographicData.GENDER_COLORS[index % demographicData.GENDER_COLORS.length]} />
-                            ))}
-                        </Pie>
-                        <Tooltip content={<CustomPieTooltip />} />
-                        <Legend iconType="circle" />
-                    </PieChart>
-                </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={demographicData.genderData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={renderCustomizedPieLabel}>{demographicData.genderData.map((entry, index) => (<Cell key={`cell-${index}`} fill={demographicData.GENDER_COLORS[index % demographicData.GENDER_COLORS.length]} />))}</Pie><Tooltip content={<CustomPieTooltip />} /><Legend iconType="circle" /></PieChart></ResponsiveContainer>
             </ChartCard>
-            <ChartCard title="Distribusi Usia" icon={<Cake className="w-6 h-6" />}>
-                 <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie 
-                            data={demographicData.ageData} 
-                            dataKey="value" 
-                            nameKey="name" 
-                            cx="50%" 
-                            cy="50%" 
-                            outerRadius={80} 
-                            labelLine={false}
-                            label={renderCustomizedPieLabel}
-                        >
-                             {demographicData.ageData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={demographicData.AGE_COLORS[index % demographicData.AGE_COLORS.length]} />
-                            ))}
-                        </Pie>
-                        <Tooltip content={<CustomPieTooltip />} />
-                        <Legend iconType="circle" />
-                    </PieChart>
-                </ResponsiveContainer>
-            </ChartCard>
-            <ChartCard title="Tingkat Pendidikan" icon={<GraduationCap className="w-6 h-6" />}>
-                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        layout="vertical"
-                        data={demographicData.educationData}
-                        margin={{ top: 5, right: 50, left: 10, bottom: 5 }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                        <XAxis type="number" hide />
-                        <YAxis
-                            type="category"
-                            dataKey="name"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 12, fill: '#64748B', fontWeight: 'bold' }}
-                            width={80}
-                        />
-                        <Tooltip cursor={{ fill: '#f9fafb' }} content={<CustomBarTooltip />} />
-                        <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                            <LabelList dataKey="value" position="right" fill="#1e293b" fontSize={12} fontWeight="bold" />
-                            {demographicData.educationData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={demographicData.EDUCATION_COLORS[index % demographicData.EDUCATION_COLORS.length]} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </ChartCard>
+            <ChartCard title="Distribusi Usia" icon={<Cake className="w-6 h-6" />}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={demographicData.ageData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={renderCustomizedPieLabel}>{demographicData.ageData.map((entry, index) => (<Cell key={`cell-${index}`} fill={demographicData.AGE_COLORS[index % demographicData.AGE_COLORS.length]} />))}</Pie><Tooltip content={<CustomPieTooltip />} /><Legend iconType="circle" /></PieChart></ResponsiveContainer></ChartCard>
+            <ChartCard title="Tingkat Pendidikan" icon={<GraduationCap className="w-6 h-6" />}><ResponsiveContainer width="100%" height="100%"><BarChart layout="vertical" data={demographicData.educationData} margin={{ top: 5, right: 50, left: 10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} /><XAxis type="number" hide /><YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B', fontWeight: 'bold' }} width={80} /><Tooltip cursor={{ fill: '#f9fafb' }} content={<CustomBarTooltip />} /><Bar dataKey="value" radius={[0, 8, 8, 0]}><LabelList dataKey="value" position="right" fill="#1e293b" fontSize={12} fontWeight="bold" />{demographicData.educationData.map((entry, index) => (<Cell key={`cell-${index}`} fill={demographicData.EDUCATION_COLORS[index % demographicData.EDUCATION_COLORS.length]} />))}</Bar></BarChart></ResponsiveContainer></ChartCard>
         </div>
       </div>
     </div>
   );
 };
 
-// Fix: Specified that the icon prop's element can accept a className prop to resolve the React.cloneElement type error.
-const StatCard = ({ icon, label, value, color }: {icon: React.ReactElement<{ className?: string }>, label: string, value: number, color: string}) => {
+const StatCard = ({ icon, label, value, color, onClick }: {icon: React.ReactElement<{ className?: string }>, label: string, value: number, color: string, onClick?: () => void}) => {
     const colors = {
         indigo: { bg: 'from-blue-500 to-blue-600', text: 'text-blue-600', shadow: 'shadow-blue-500/20'},
         emerald: { bg: 'from-emerald-500 to-emerald-600', text: 'text-emerald-600', shadow: 'shadow-emerald-500/20'},
         rose: { bg: 'from-rose-500 to-rose-600', text: 'text-rose-600', shadow: 'shadow-rose-500/20'},
+        amber: { bg: 'from-amber-500 to-amber-600', text: 'text-amber-600', shadow: 'shadow-amber-500/20'},
     }
     const selectedColor = colors[color as keyof typeof colors] || colors.indigo;
+    const cardClass = `bg-white p-5 md:p-6 rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 flex items-center space-x-5 ${onClick ? 'cursor-pointer hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 transition-all' : ''}`;
 
     return (
-        <div className="bg-white p-5 md:p-6 rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 flex items-center space-x-5">
+        <div className={cardClass} onClick={onClick}>
             <div className={`flex-shrink-0 p-4 md:p-5 rounded-xl md:rounded-2xl bg-gradient-to-br ${selectedColor.bg} text-white shadow-lg ${selectedColor.shadow}`}>
                 {React.cloneElement(icon, { className: `w-7 h-7 md:w-8 md:h-8` })}
             </div>

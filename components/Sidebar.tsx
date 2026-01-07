@@ -6,7 +6,8 @@ import {
   LogOut, 
   MessagesSquare,
   Building2,
-  Receipt, // Icon baru
+  Receipt,
+  ShieldCheck, // Icon baru
   Menu,
   X
 } from 'lucide-react';
@@ -15,9 +16,10 @@ import { User } from '../types';
 interface SidebarProps {
   user: User;
   onLogout: () => void;
+  pendingRequestCount: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingRequestCount }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const links = [
@@ -25,6 +27,12 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
     { to: '/database', icon: <Database className="w-5 h-5" />, label: 'Data Base' },
     { to: '/clients', icon: <Building2 className="w-5 h-5" />, label: 'Kelola Klien' },
     { to: '/payslips', icon: <Receipt className="w-5 h-5" />, label: 'Slip Gaji' },
+    { 
+      to: '/approval-center', 
+      icon: <ShieldCheck className="w-5 h-5" />, 
+      label: 'Pst Persetujuan', 
+      badge: pendingRequestCount > 0 ? pendingRequestCount : null 
+    },
     { to: '/chat', icon: <MessagesSquare className="w-5 h-5" />, label: 'Pesan' },
   ];
 
@@ -85,7 +93,12 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
                   <>
                     {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-blue-600 rounded-r-full"></div>}
                     {link.icon}
-                    <span className="font-medium">{link.label}</span>
+                    <span className="font-medium flex-1">{link.label}</span>
+                    {link.badge && (
+                      <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                        {link.badge > 9 ? '9+' : link.badge}
+                      </span>
+                    )}
                   </>
                )}
             </NavLink>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip } from './types';
+import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip, DocumentRequest, DocumentRequestStatus } from './types';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -11,6 +11,7 @@ import ClientManagement from './pages/ClientManagement';
 import { generateChatReply } from './services/geminiService';
 import PublicSearch from './pages/PublicSearch';
 import PayslipPage from './pages/PayslipPage';
+import ApprovalCenter from './pages/ApprovalCenter';
 import { supabase } from './services/supabaseClient';
 import { Loader } from 'lucide-react';
 import { useNotifier } from './components/Notifier';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
     employees: [],
     employeeChats: {},
     payslips: [],
+    documentRequests: [],
   });
   const [loading, setLoading] = useState(true);
   const notifier = useNotifier();
@@ -40,22 +42,26 @@ const App: React.FC = () => {
           { data: clientsData, error: clientsError },
           { data: employeesData, error: employeesError },
           { data: payslipsData, error: payslipsError },
+          { data: requestsData, error: requestsError },
         ] = await Promise.all([
           supabase.from('clients').select('*'),
           supabase.from('employees').select('*'),
           supabase.from('payslips').select('*'),
+          supabase.from('document_requests').select('*'),
         ]);
 
         if (clientsError) throw clientsError;
         if (employeesError) throw employeesError;
         if (payslipsError) throw payslipsError;
+        if (requestsError) throw requestsError;
         
         setState(prev => ({
           ...prev,
           clients: clientsData || [],
           employees: employeesData || [],
           payslips: payslipsData || [],
-          employeeChats: {}, // Initialize empty, as there's no discussion feature data
+          documentRequests: requestsData || [],
+          employeeChats: {}, 
         }));
       } catch (error: any)
       {
@@ -89,64 +95,36 @@ const App: React.FC = () => {
   // --- CRUD OPERATIONS FOR EMPLOYEES ---
   const handleEmployeeDataChange = async (employeesToUpsert: Partial<Employee>[]) => {
     const employeeMap = new Map(state.employees.map(emp => [emp.id, emp]));
-
-    // Perform a deep merge client-side to correctly handle partial updates to JSONB columns
     const recordsToUpsert = employeesToUpsert.map(partialEmp => {
-        if (!partialEmp.id) return null; // Should not happen if CSV parsing is correct
+        if (!partialEmp.id) return null;
         const existingEmp = employeeMap.get(partialEmp.id) || {};
-        
         const mergedEmp: Employee = {
-            ...(existingEmp as Employee),
-            ...partialEmp,
-            // FIX: Safely merge nested bankAccount object, guarding against null values from the database which cannot be spread.
-            bankAccount: {
-                ...((existingEmp as any).bankAccount || {}),
-                ...(partialEmp.bankAccount || {}),
-            },
-            // FIX: Safely merge nested bpjs object, guarding against null values from the database which cannot be spread.
-            bpjs: {
-                ...((existingEmp as any).bpjs || {}),
-                ...(partialEmp.bpjs || {}),
-            },
-            // FIX: Safely merge nested documents object, guarding against null values from the database which cannot be spread.
-            documents: {
-                ...((existingEmp as any).documents || {}),
-                ...(partialEmp.documents || {}),
-            }
+            ...(existingEmp as Employee), ...partialEmp,
+            bankAccount: { ...((existingEmp as any).bankAccount || {}), ...(partialEmp.bankAccount || {}) },
+            bpjs: { ...((existingEmp as any).bpjs || {}), ...(partialEmp.bpjs || {}) },
+            documents: { ...((existingEmp as any).documents || {}), ...(partialEmp.documents || {}) }
         };
         return mergedEmp;
     }).filter((e): e is Employee => e !== null);
 
     if (recordsToUpsert.length === 0) {
-        notifier.addNotification("Tidak ada data valid untuk diimpor.", "info");
-        return;
+        notifier.addNotification("Tidak ada data valid untuk diimpor.", "info"); return;
     }
-
     const { data: upsertedData, error } = await supabase.from('employees').upsert(recordsToUpsert).select();
-
     if (error) {
-        notifier.addNotification(`Impor massal gagal: ${error.message}`, 'error');
-        return;
+        notifier.addNotification(`Impor massal gagal: ${error.message}`, 'error'); return;
     }
-
     if (upsertedData) {
         const updatedEmployeeMap = new Map(state.employees.map(emp => [emp.id, emp]));
         upsertedData.forEach(dbEmp => updatedEmployeeMap.set(dbEmp.id, dbEmp as Employee));
-        const finalEmployeeList = Array.from(updatedEmployeeMap.values());
-
-        setState(prev => ({ ...prev, employees: finalEmployeeList }));
+        setState(prev => ({ ...prev, employees: Array.from(updatedEmployeeMap.values()) }));
         notifier.addNotification(`${recordsToUpsert.length} baris data karyawan berhasil diimpor/diperbarui.`, 'success');
     }
   };
 
-
   const addEmployee = async (employee: Employee) => {
     const { data, error } = await supabase.from('employees').insert([employee]).select();
-    if (error) {
-      console.error("Error adding employee:", error);
-      notifier.addNotification(`Gagal menambahkan karyawan: ${error.message}`, 'error');
-      return;
-    }
+    if (error) { notifier.addNotification(`Gagal menambahkan karyawan: ${error.message}`, 'error'); return; }
     if (data) {
       setState(prev => ({ ...prev, employees: [data[0], ...prev.employees]}));
       notifier.addNotification('Karyawan baru berhasil ditambahkan.', 'success');
@@ -155,38 +133,32 @@ const App: React.FC = () => {
 
   const updateEmployee = async (employee: Employee) => {
     const { data, error } = await supabase.from('employees').update(employee).eq('id', employee.id).select();
-    if (error) {
-      console.error("Error updating employee:", error);
-      notifier.addNotification(`Gagal memperbarui karyawan: ${error.message}`, 'error');
-      return;
-    }
+    if (error) { notifier.addNotification(`Gagal memperbarui karyawan: ${error.message}`, 'error'); return; }
     if (data) {
-        setState(prev => ({
-            ...prev,
-            employees: prev.employees.map(e => e.id === employee.id ? data[0] : e)
-        }));
+        setState(prev => ({ ...prev, employees: prev.employees.map(e => e.id === employee.id ? data[0] : e) }));
         notifier.addNotification('Data karyawan berhasil diperbarui.', 'success');
     }
   };
 
   const deleteEmployee = async (employeeId: string) => {
     const { error } = await supabase.from('employees').delete().eq('id', employeeId);
-     if (error) {
-      console.error("Error deleting employee:", error);
-      notifier.addNotification(`Gagal menghapus karyawan: ${error.message}`, 'error');
-      return;
-    }
+    if (error) { notifier.addNotification(`Gagal menghapus karyawan: ${error.message}`, 'error'); return; }
     setState(prev => ({...prev, employees: prev.employees.filter(e => e.id !== employeeId)}));
     notifier.addNotification('Karyawan berhasil dihapus.', 'success');
   };
+  
+  const resetEmployees = async (): Promise<boolean> => {
+    const { error } = await supabase.from('employees').delete().neq('id', 'placeholder');
+    if (error) { notifier.addNotification(`Gagal mereset database: ${error.message}`, 'error'); return false; }
+    setState(prev => ({ ...prev, employees: [] }));
+    notifier.addNotification('Seluruh data karyawan berhasil direset.', 'success');
+    return true;
+  };
 
-  // --- REFACTORED CRUD FOR CLIENTS ---
+  // --- CRUD FOR CLIENTS ---
   const addClient = async (client: Client) => {
     const { data, error } = await supabase.from('clients').insert([client]).select();
-    if (error) {
-        notifier.addNotification(`Gagal menambahkan klien: ${error.message}`, 'error');
-        return;
-    }
+    if (error) { notifier.addNotification(`Gagal menambahkan klien: ${error.message}`, 'error'); return; }
     if (data) {
         setState(prev => ({ ...prev, clients: [data[0], ...prev.clients] }));
         notifier.addNotification('Klien baru berhasil ditambahkan.', 'success');
@@ -195,10 +167,7 @@ const App: React.FC = () => {
 
   const updateClient = async (client: Client) => {
     const { data, error } = await supabase.from('clients').update(client).eq('id', client.id).select();
-    if (error) {
-        notifier.addNotification(`Gagal memperbarui klien: ${error.message}`, 'error');
-        return;
-    }
+    if (error) { notifier.addNotification(`Gagal memperbarui klien: ${error.message}`, 'error'); return; }
     if (data) {
         setState(prev => ({ ...prev, clients: prev.clients.map(c => c.id === client.id ? data[0] : c) }));
         notifier.addNotification('Data klien berhasil diperbarui.', 'success');
@@ -207,53 +176,91 @@ const App: React.FC = () => {
     
   const deleteClient = async (clientId: string) => {
     const { error } = await supabase.from('clients').delete().eq('id', clientId);
-    if (error) {
-        notifier.addNotification(`Gagal menghapus klien: ${error.message}`, 'error');
-        return;
-    }
+    if (error) { notifier.addNotification(`Gagal menghapus klien: ${error.message}`, 'error'); return; }
     setState(prev => ({ ...prev, clients: prev.clients.filter(c => c.id !== clientId) }));
     notifier.addNotification('Klien berhasil dihapus.', 'success');
   };
 
   // --- OPERATIONS FOR PAYSLIPS ---
   const handlePayslipsChange = async (newPayslips: Payslip[]) => {
-    const { data, error } = await supabase.from('payslips').upsert(newPayslips, { onConflict: 'id' });
-    if (error) {
-        notifier.addNotification(`Gagal menyimpan slip gaji: ${error.message}`, 'error');
-        return false;
-    }
-    
-    // Manually merge new/updated data to avoid full re-fetch
+    const { error } = await supabase.from('payslips').upsert(newPayslips, { onConflict: 'id' });
+    if (error) { notifier.addNotification(`Gagal menyimpan slip gaji: ${error.message}`, 'error'); return false; }
     const payslipMap = new Map(state.payslips.map(p => [p.id, p]));
     newPayslips.forEach(p => payslipMap.set(p.id, p));
-    const updatedPayslips = Array.from(payslipMap.values());
-    
-    setState(prev => ({ ...prev, payslips: updatedPayslips }));
+    setState(prev => ({ ...prev, payslips: Array.from(payslipMap.values()) }));
     notifier.addNotification(`${newPayslips.length} slip gaji berhasil diproses.`, 'success');
     return true;
   };
   
   const deletePayslip = async (payslipId: string) => {
     const payslipToDelete = state.payslips.find(p => p.id === payslipId);
-    if (!payslipToDelete) return;
-
-    // 1. Delete file from storage
+    if (!payslipToDelete) return false;
     const filePath = `payslips/${payslipToDelete.period}/${payslipToDelete.employeeId}.pdf`;
     const { error: storageError } = await supabase.storage.from('swapro_files').remove([filePath]);
     if (storageError && storageError.message !== 'The resource was not found') {
         notifier.addNotification(`Gagal menghapus file dari storage: ${storageError.message}`, 'error');
         return false;
     }
-
-    // 2. Delete record from database
     const { error } = await supabase.from('payslips').delete().eq('id', payslipId);
-    if (error) {
-        notifier.addNotification(`Gagal menghapus slip gaji: ${error.message}`, 'error');
-        return false;
-    }
+    if (error) { notifier.addNotification(`Gagal menghapus slip gaji: ${error.message}`, 'error'); return false; }
     setState(prev => ({ ...prev, payslips: prev.payslips.filter(p => p.id !== payslipId) }));
     notifier.addNotification('Slip gaji berhasil dihapus.', 'success');
     return true;
+  };
+
+  // --- DOCUMENT REQUEST HANDLERS ---
+  const handleCreateDocumentRequest = async (request: Omit<DocumentRequest, 'id' | 'requestTimestamp' | 'status'>) => {
+    const newRequest = {
+      ...request,
+      status: DocumentRequestStatus.PENDING,
+      requestTimestamp: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('document_requests').insert(newRequest).select();
+    if (error) {
+      notifier.addNotification(`Gagal mengirim permintaan: ${error.message}`, 'error');
+      return;
+    }
+    if (data) {
+      setState(prev => ({ ...prev, documentRequests: [...prev.documentRequests, data[0]]}));
+      notifier.addNotification('Permintaan dokumen berhasil dikirim.', 'success');
+    }
+  };
+
+  const handleRespondToRequest = async (
+    requestId: string,
+    approved: boolean,
+    durationMinutes?: number,
+    rejectionReason?: string
+  ) => {
+    if (!state.currentUser) return;
+    
+    const updatePayload: Partial<DocumentRequest> = {
+      status: approved ? DocumentRequestStatus.APPROVED : DocumentRequestStatus.REJECTED,
+      responseTimestamp: new Date().toISOString(),
+      picId: state.currentUser.id
+    };
+
+    if (approved && durationMinutes) {
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + durationMinutes);
+      updatePayload.accessExpiresAt = expiresAt.toISOString();
+    } else if (!approved) {
+      updatePayload.rejectionReason = rejectionReason;
+    }
+
+    const { data, error } = await supabase.from('document_requests').update(updatePayload).eq('id', requestId).select();
+    
+    if (error) {
+       notifier.addNotification(`Gagal merespon permintaan: ${error.message}`, 'error');
+       return;
+    }
+    if (data) {
+       setState(prev => ({
+         ...prev,
+         documentRequests: prev.documentRequests.map(req => req.id === requestId ? data[0] : req)
+       }));
+       notifier.addNotification(`Permintaan berhasil direspon.`, 'success');
+    }
   };
 
 
@@ -265,42 +272,12 @@ const App: React.FC = () => {
   const generateEmployeeReply = async (employeeId: string, currentChat: Chat) => {
     const employee = state.employees.find(e => e.id === employeeId);
     if (!employee || !state.currentUser) return;
-
-    setState(prevState => ({
-      ...prevState,
-      employeeChats: {
-        ...prevState.employeeChats,
-        [employeeId]: { ...currentChat, isTyping: true }
-      }
-    }));
-
-    const aiResponseText = await generateChatReply(
-      currentChat.messages,
-      employee.fullName,
-      state.currentUser.nama
-    );
-
-    const newEmployeeMessage: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: employeeId,
-      text: aiResponseText,
-      timestamp: new Date().toISOString()
-    };
-    
+    setState(prevState => ({ ...prevState, employeeChats: { ...prevState.employeeChats, [employeeId]: { ...currentChat, isTyping: true } }}));
+    const aiResponseText = await generateChatReply(currentChat.messages, employee.fullName, state.currentUser.nama);
+    const newEmployeeMessage: Message = { id: `msg-${Date.now()}`, senderId: employeeId, text: aiResponseText, timestamp: new Date().toISOString() };
     setState(prevState => {
       const latestMessages = prevState.employeeChats[employeeId]?.messages || currentChat.messages;
-      const updatedChat = {
-        messages: [...latestMessages, newEmployeeMessage],
-        isTyping: false
-      };
-
-      return {
-        ...prevState,
-        employeeChats: {
-          ...prevState.employeeChats,
-          [employeeId]: updatedChat
-        }
-      };
+      return { ...prevState, employeeChats: { ...prevState.employeeChats, [employeeId]: { messages: [...latestMessages, newEmployeeMessage], isTyping: false } }};
     });
   };
   
@@ -321,69 +298,40 @@ const App: React.FC = () => {
       <AudioPlayer />
       <HashRouter>
         {state.currentUser ? (
-          // --- Logged-in View ---
           <div className="flex h-screen bg-[var(--background)] overflow-hidden">
-            <Sidebar user={state.currentUser} onLogout={logout} />
+            <Sidebar user={state.currentUser} onLogout={logout} pendingRequestCount={state.documentRequests.filter(r => r.status === 'PENDING').length} />
             <main className="flex-1 overflow-y-auto pb-24 min-w-0">
               <Routes>
                 <Route path="/" element={<Dashboard state={state} />} />
                 <Route path="/database" element={
-                  <Database
-                    employees={state.employees}
-                    clients={state.clients}
-                    payslips={state.payslips}
-                    onDataChange={handleEmployeeDataChange}
-                    onAddEmployee={addEmployee}
-                    onUpdateEmployee={updateEmployee}
-                    onDeleteEmployee={deleteEmployee}
-                    currentUser={state.currentUser}
-                  />
+                  <Database employees={state.employees} clients={state.clients} payslips={state.payslips} onDataChange={handleEmployeeDataChange} onAddEmployee={addEmployee} onUpdateEmployee={updateEmployee} onDeleteEmployee={deleteEmployee} onResetEmployees={resetEmployees} currentUser={state.currentUser} />
                 } />
                 <Route path="/clients" element={
-                  <ClientManagement
-                    clients={state.clients}
-                    employees={state.employees}
-                    onAddClient={addClient}
-                    onUpdateClient={updateClient}
-                    onDeleteClient={deleteClient}
-                  />
+                  <ClientManagement clients={state.clients} employees={state.employees} onAddClient={addClient} onUpdateClient={updateClient} onDeleteClient={deleteClient} />
                 } />
                 <Route path="/payslips" element={
-                  <PayslipPage
-                    payslips={state.payslips}
-                    employees={state.employees}
-                    clients={state.clients}
-                    onPayslipsChange={handlePayslipsChange}
-                    onDeletePayslip={deletePayslip}
-                  />
+                  <PayslipPage payslips={state.payslips} employees={state.employees} clients={state.clients} onPayslipsChange={handlePayslipsChange} onDeletePayslip={deletePayslip} />
+                } />
+                 <Route path="/approval-center" element={
+                  <ApprovalCenter allRequests={state.documentRequests} employees={state.employees} onRespondToRequest={handleRespondToRequest} />
                 } />
                 <Route path="/chat" element={
-                  <ChatPage
-                    employees={state.employees}
-                    currentUser={state.currentUser}
-                    chats={state.employeeChats}
-                    onUpdate={handleEmployeeChatUpdate}
-                    onGenerateReply={generateEmployeeReply}
-                  />
+                  <ChatPage employees={state.employees} currentUser={state.currentUser} chats={state.employeeChats} onUpdate={handleEmployeeChatUpdate} onGenerateReply={generateEmployeeReply} />
                 } />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </main>
           </div>
         ) : (
-          // --- Public / Logged-out View ---
           <Routes>
-            <Route path="/admin" element={
-              <Login 
-                onPicLogin={handlePicLogin}
-              />
-            } />
+            <Route path="/admin" element={<Login onPicLogin={handlePicLogin} />} />
             <Route path="/search" element={
               <PublicSearch 
                 employees={state.employees} 
                 clients={state.clients}
                 payslips={state.payslips}
-                currentUser={{id: 'public', nama: 'Guest', role: UserRole.KARYAWAN}}
+                documentRequests={state.documentRequests}
+                onRequestDocument={handleCreateDocumentRequest}
               />
             } />
             <Route path="*" element={<Landing />} />

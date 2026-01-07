@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef } from 'react';
 import { Payslip, Employee, Client } from '../types';
 import { UploadCloud, Calendar, Search, Download, User, Trash2, Edit, Check, X, Loader2, FileCheck2, Replace } from 'lucide-react';
@@ -39,7 +40,8 @@ const ManagementModal: React.FC<{
     if (!isOpen) return null;
 
     const payslipsForPeriod = payslips.filter(p => p.period === period);
-    const payslipMap = new Map(payslipsForPeriod.map(p => [p.employeeId, p]));
+    // Fixed: Explicitly typed the Map to avoid inference issues that lead to '{}' errors when accessing entries.
+    const payslipMap = new Map<string, Payslip>(payslipsForPeriod.map(p => [p.employeeId, p]));
 
     const filteredEmployees = employees.filter(e => e.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -76,7 +78,6 @@ const ManagementModal: React.FC<{
         }
     };
     
-    // Fix: Pass employee to handleDelete to have access to the employee's name for the confirmation message.
     const handleDelete = async (payslip: Payslip, employee: Employee) => {
       if (window.confirm(`Hapus slip gaji untuk ${employee.fullName} periode ${formatPeriod(period)}?`)) {
         await onDeletePayslip(payslip.id);
@@ -101,7 +102,7 @@ const ManagementModal: React.FC<{
                 </div>
                 <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
                     {filteredEmployees.map(employee => {
-                        // FIX: Explicitly typing `payslip` to correct TypeScript inference issues.
+                        // Fixed: Explicitly typed the Map and assigned the result to a typed Payslip variable to fix line 105 error.
                         const payslip: Payslip | undefined = payslipMap.get(employee.id);
                         return (
                              <div key={employee.id} className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50">
@@ -161,7 +162,6 @@ const PayslipPage: React.FC<PayslipPageProps> = ({ payslips, employees, clients,
     }, [payslips]);
     
     const uniqueYears = useMemo(() => {
-        // Fix: Explicitly type the Set as Set<string> to ensure correct type inference for the sort method.
         const years = new Set<string>(payslips.map(p => p.period.substring(0,4)));
         const currentYear = new Date().getFullYear().toString();
         years.add(currentYear);

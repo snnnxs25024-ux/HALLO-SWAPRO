@@ -68,7 +68,7 @@ const Discussion: React.FC<DiscussionProps> = ({ dataEntries, chats, currentUser
     const [newMessage, setNewMessage] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const userEntries = dataEntries.filter(e => e.userId === currentUser.id).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const userEntries = (dataEntries || []).filter(e => e.userId === currentUser.id).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const selectedEntry = selectedEntryId ? dataEntries.find(e => e.id === selectedEntryId) : null;
     const selectedChat = selectedEntryId ? chats[selectedEntryId] : null;

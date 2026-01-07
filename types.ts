@@ -75,24 +75,6 @@ export interface Employee {
   };
 }
 
-// Fix: Add DataStatus enum for discussion entries.
-export enum DataStatus {
-    BARU = 'Baru',
-    PROSES = 'Proses',
-    PENDING = 'Pending',
-    SELESAI = 'Selesai'
-}
-
-// Fix: Add DataEntry interface for discussion entries.
-export interface DataEntry {
-    id: string;
-    judul: string;
-    deskripsi: string;
-    userId: string;
-    status: DataStatus;
-    createdAt: string; // ISO string
-}
-
 export interface Message {
   id: string;
   senderId: string; // 'admin' or user.id
@@ -113,10 +95,61 @@ export interface Payslip {
     fileUrl: string;
 }
 
+// --- NEW TYPES FOR DOCUMENT REQUEST SYSTEM ---
+
+export enum DocumentRequestStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+}
+
+export enum DocumentType {
+  PAYSLIP = 'PAYSLIP',
+  PKWT_NEW = 'PKWT_NEW',
+  PKWT_HISTORY = 'PKWT_HISTORY',
+  SP_LETTER = 'SP_LETTER',
+}
+
+export interface DocumentRequest {
+  id: string; // uuid
+  employeeId: string;
+  documentType: DocumentType;
+  documentIdentifier: string; // e.g., payslip period "2024-07" or contract ID
+  documentName: string; // e.g., "Slip Gaji Juli 2024" or "PKWT Perpanjangan 2"
+  status: DocumentRequestStatus;
+  requestTimestamp: string; // ISO string
+  responseTimestamp?: string; // ISO string
+  rejectionReason?: string;
+  accessExpiresAt?: string; // ISO string
+  picId?: string; // ID of the PIC who responded
+}
+
+// FIX: Add missing types for Discussion page
+export enum DataStatus {
+  BARU = 'BARU',
+  PROSES = 'PROSES',
+  PENDING = 'PENDING',
+  SELESAI = 'SELESAI',
+}
+
+export interface DataEntry {
+  id: string;
+  judul: string;
+  deskripsi: string;
+  userId: string;
+  status: DataStatus;
+  createdAt: string; // ISO string
+}
+
+
 export interface AppState {
   currentUser: User | null;
   employees: Employee[];
   clients: Client[];
   employeeChats: Record<string, Chat>;
   payslips: Payslip[];
+  documentRequests: DocumentRequest[];
+  // FIX: Add dataEntries for Discussion page state
+  dataEntries?: DataEntry[];
 }

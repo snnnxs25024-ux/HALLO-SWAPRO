@@ -1,247 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft, ChevronLeft, ChevronRight, LogOut, Receipt, Download, Cake, GraduationCap, Briefcase, Phone, FileText, Shield, Calendar, CreditCard, FileX } from 'lucide-react';
-import { Employee, Client, User as AppUser, Payslip, EmployeeStatus } from '../types';
+import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Employee, Client, Payslip, DocumentRequest, DocumentType } from '../types';
 import { useNavigate } from 'react-router-dom';
-
-const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
-const getFileNameFromUrl = (url?: string): string => {
-    if (!url) return 'File tidak ditemukan';
-    try {
-        const urlObj = new URL(url);
-        const pathSegments = urlObj.pathname.split('/');
-        return decodeURIComponent(pathSegments[pathSegments.length - 1]);
-    } catch (e) {
-        return 'nama_file_tidak_valid.bin';
-    }
-};
-
-const formatPeriod = (period: string) => {
-    const [year, month] = period.split('-');
-    return new Date(parseInt(year), parseInt(month) - 1).toLocaleString('id-ID', {
-        month: 'long',
-        year: 'numeric'
-    });
-};
-
-const EmployeeDetailModal: React.FC<{ 
-    employee: Employee; 
-    allData: { clients: Client[], payslips: Payslip[] };
-    onClose: () => void;
-}> = ({ employee, allData, onClose }) => {
-    const [activeTab, setActiveTab] = useState('profil');
-    const [selectedPayslipYear, setSelectedPayslipYear] = useState(new Date().getFullYear());
-    const { clients, payslips } = allData;
-    const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
-    const employeePayslips = useMemo(() => payslips.filter(p => p.employeeId === employee.id).sort((a,b) => b.period.localeCompare(a.period)), [payslips, employee.id]);
-    const contractHistory = employee.documents?.contractHistory || [];
-
-    const payslipYears = useMemo(() => {
-        const years = new Set<string>(employeePayslips.map(p => p.period.substring(0, 4)));
-        const currentYear = new Date().getFullYear().toString();
-        years.add(currentYear);
-        return Array.from(years).sort((a, b) => b.localeCompare(a));
-    }, [employeePayslips]);
-
-    useEffect(() => {
-      if (payslipYears.length > 0) {
-        setSelectedPayslipYear(Number(payslipYears[0]));
-      }
-    }, [payslipYears]);
-
-    const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
-    
-    const renderInfoItem = (icon: React.ReactNode, label: string, value: any) => (
-        <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0 text-slate-400 mt-1">{icon}</div>
-            <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <p className="text-base font-semibold text-slate-800 break-words">{value || '-'}</p>
-            </div>
-        </div>
-    );
-
-    const renderDocumentLink = (label: string, url?: string) => (
-        url ? (
-            <a href={url} download={getFileNameFromUrl(url)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
-                <div className="flex items-center space-x-3 min-w-0">
-                    <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span className="font-semibold text-sm text-slate-700 truncate">{getFileNameFromUrl(url)}</span>
-                </div>
-                <Download className="w-5 h-5 text-slate-400 ml-2" />
-            </a>
-        ) : (
-             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg opacity-60 border border-gray-100">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <span className="text-sm text-gray-500 italic">{label} belum tersedia</span>
-            </div>
-        )
-    );
-    
-    const DetailSection: React.FC<{ title: string; children: React.ReactNode; grid?: boolean }> = ({ title, children, grid = true }) => (
-      <div className="mb-8 last:mb-0">
-        <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase mb-4">{title}</h4>
-        <div className={grid ? "grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5" : "space-y-3"}>
-          {children}
-        </div>
-      </div>
-    );
-    
-    const payslipsForSelectedYear = employeePayslips.filter(p => p.period.startsWith(selectedPayslipYear.toString()));
-
-    return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
-            <div className="bg-white rounded-none md:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn">
-                {/* Header */}
-                 <div className="p-5 pt-8 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 text-center md:text-left relative">
-                    <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
-                    <div className="flex flex-1 min-w-0 flex-col md:flex-row items-center gap-4">
-                        {employee.profilePhotoUrl ? (
-                            <img
-                                src={employee.profilePhotoUrl}
-                                alt={employee.fullName || 'Foto Profil'}
-                                className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md shrink-0"
-                            />
-                        ) : (
-                            <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center text-white font-black text-4xl shadow-md ring-4 ring-white shrink-0">
-                                {employee.fullName.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                            </div>
-                        )}
-                        <div className="min-w-0">
-                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate pr-2">{employee.fullName}</h2>
-                            <p className="text-sm md:text-base text-slate-500 font-mono">{employee.id}</p>
-                             <div className={`mt-2 inline-block text-xs font-bold uppercase px-2.5 py-1 rounded-full ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
-                                {employee.status}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {/* Tabs */}
-                <div className="px-4 border-b border-gray-200 bg-white">
-                    <nav className="-mb-px flex space-x-4 md:space-x-6 overflow-x-auto">
-                        {tabs.map(tab => (
-                            <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 border-b-2 font-bold text-sm uppercase tracking-wider ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                                {tab}
-                            </button>
-                        ))}
-                    </nav>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 md:p-8 overflow-y-auto bg-white flex-1">
-                     {activeTab === 'profil' && (
-                        <DetailSection title="Data Pribadi">
-                            {renderInfoItem(<User className="w-4 h-4" />, "NIK KTP", employee.ktpId)}
-                            {renderInfoItem(<User className="w-4 h-4" />, "NIK SWAPRO", employee.swaproId)}
-                            {renderInfoItem(<Phone className="w-4 h-4" />, "No. WhatsApp", employee.whatsapp || '#N/A')}
-                            {renderInfoItem(<User className="w-4 h-4" />, "Jenis Kelamin", employee.gender)}
-                            {renderInfoItem(<Cake className="w-4 h-4" />, "Tanggal Lahir", employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-')}
-                            {renderInfoItem(<GraduationCap className="w-4 h-4" />, "Pendidikan Terakhir", employee.lastEducation || '-')}
-                            {renderInfoItem(<CreditCard className="w-4 h-4" />, "NPWP", employee.npwp)}
-                        </DetailSection>
-                    )}
-                     {activeTab === 'pekerjaan' && (
-                         <>
-                            <DetailSection title="Informasi Posisi">
-                                {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employee.clientId || ''))}
-                                {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employee.position)}
-                                {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employee.branch)}
-                            </DetailSection>
-                            <DetailSection title="Status & Kontrak">
-                                {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Join", employee.joinDate ? new Date(employee.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
-                                {renderInfoItem(<Calendar className="w-4 h-4" />, "End of Contract", employee.endDate ? new Date(employee.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
-                                {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Resign", employee.resignDate ? new Date(employee.resignDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
-                                {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employee.contractNumber)}
-                                <div className="md:col-span-2">
-                                    {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan Surat Peringatan (SP)", employee.disciplinaryActions)}
-                                </div>
-                            </DetailSection>
-                        </>
-                    )}
-                     {activeTab === 'finansial' && (
-                         <>
-                            <DetailSection title="Rekening Bank">
-                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employee.bankAccount?.bankName)}
-                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employee.bankAccount?.number)}
-                                {renderInfoItem(<User className="w-4 h-4" />, "Nama Pemilik Rekening", employee.bankAccount?.holderName)}
-                            </DetailSection>
-                            <DetailSection title="Jaminan Sosial">
-                                {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS Ketenagakerjaan", employee.bpjs?.ketenagakerjaan)}
-                                {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS Kesehatan", employee.bpjs?.kesehatan)}
-                            </DetailSection>
-                        </>
-                    )}
-                    {activeTab === 'dokumen' && (
-                       <>
-                          <DetailSection title="Dokumen Utama" grid={false}>
-                              {renderDocumentLink("PKWT New Hire", employee.documents?.pkwtNewHire)}
-                              {renderDocumentLink("Surat Peringatan (SP)", employee.documents?.spLetter)}
-                          </DetailSection>
-                          <DetailSection title="Riwayat Kontrak Perpanjangan" grid={false}>
-                              {contractHistory.length > 0 ? contractHistory.map(doc => (
-                                  <a key={doc.id} href={doc.fileUrl} download={getFileNameFromUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
-                                      <div className="flex items-center space-x-3 min-w-0">
-                                          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                                          <div>
-                                            <p className="font-semibold text-sm text-slate-700 truncate">{doc.name}</p>
-                                            <p className="text-xs text-slate-500">
-                                                {new Date(doc.startDate).toLocaleDateString('id-ID')} - {new Date(doc.endDate).toLocaleDateString('id-ID')}
-                                            </p>
-                                          </div>
-                                      </div>
-                                      <Download className="w-5 h-5 text-slate-400 ml-2" />
-                                  </a>
-                              )) : (
-                                  <p className="text-center text-base text-slate-400 italic py-4">Belum ada riwayat perpanjangan kontrak.</p>
-                              )}
-                          </DetailSection>
-                        </>
-                    )}
-                    {activeTab === 'slip gaji' && (
-                        <div>
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase">Histori Slip Gaji</h4>
-                                <select value={selectedPayslipYear} onChange={e => setSelectedPayslipYear(Number(e.target.value))} className="font-semibold text-sm bg-slate-100 border-slate-200 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500">
-                                    {payslipYears.map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                {MONTH_NAMES.map((month, index) => {
-                                    const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`;
-                                    const payslipForMonth = employeePayslips.find(p => p.period === period);
-                                    
-                                    if (payslipForMonth) {
-                                        return (
-                                            <a key={month} href={payslipForMonth.fileUrl} download={`slipgaji-${employee.id}-${period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center text-center p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors group">
-                                                <Download className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
-                                                <span className="font-bold text-sm text-blue-700">{month}</span>
-                                            </a>
-                                        );
-                                    } else {
-                                        return (
-                                            <div key={month} className="flex flex-col items-center justify-center text-center p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-not-allowed opacity-60">
-                                                <FileX className="w-5 h-5 text-slate-400 mb-1" />
-                                                <span className="font-semibold text-sm text-slate-500">{month}</span>
-                                            </div>
-                                        );
-                                    }
-                                })}
-                            </div>
-                             {payslipsForSelectedYear.length === 0 && <p className="text-center text-base text-slate-400 italic py-8">Tidak ada data slip gaji untuk tahun {selectedPayslipYear}.</p>}
-                        </div>
-                    )}
-                </div>
-            </div>
-            <style>{`
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-                .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-                .animate-scaleIn { animation: scaleIn 0.3s ease-out forwards; }
-            `}</style>
-        </div>
-    )
-}
-
+import EmployeePortal from './EmployeePortal';
 
 // --- SUB-COMPONENTS ---
 const PasswordPromptModal: React.FC<{
@@ -253,9 +14,7 @@ const PasswordPromptModal: React.FC<{
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        if (isOpen) {
-            setPassword('');
-        }
+        if (isOpen) setPassword('');
     }, [isOpen]);
 
     if (!isOpen) return null;
@@ -307,9 +66,8 @@ const PasswordPromptModal: React.FC<{
 
 const PublicEmployeeCard: React.FC<{ 
   employee: Employee, 
-  clientName: string, 
   onView: () => void
-}> = ({ employee, clientName, onView }) => (
+}> = ({ employee, onView }) => (
   <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300 text-center">
     <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md mb-4 mx-auto" />
     <div className="w-full min-w-0">
@@ -321,7 +79,7 @@ const PublicEmployeeCard: React.FC<{
       </div>
     </div>
     <button onClick={onView} className="mt-4 w-full bg-blue-50 text-blue-600 font-bold py-2.5 px-4 rounded-lg hover:bg-blue-100 transition-colors">
-        Lihat Detail
+        Verifikasi & Lihat Portal
     </button>
   </div>
 );
@@ -332,78 +90,48 @@ const Pagination: React.FC<{
   onPageChange: (page: number) => void;
 }> = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
-
   const pageNumbers = [];
   const maxVisible = 3;
   let start = Math.max(1, currentPage - 1);
   let end = Math.min(totalPages, start + maxVisible - 1);
   if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
-
-  for (let i = start; i <= end; i++) {
-    pageNumbers.push(i);
-  }
+  for (let i = start; i <= end; i++) pageNumbers.push(i);
 
   return (
     <nav className="flex items-center justify-center space-x-2 mt-10 pb-4">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="flex items-center justify-center p-2.5 rounded-lg bg-white border border-gray-300 text-slate-600 hover:bg-gray-100 disabled:opacity-40 transition"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
+      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="flex items-center justify-center p-2.5 rounded-lg bg-white border border-gray-300 text-slate-600 hover:bg-gray-100 disabled:opacity-40 transition"><ChevronLeft className="w-5 h-5" /></button>
       {start > 1 && <span className="text-slate-400 px-2">...</span>}
-      {pageNumbers.map((number) => (
-        <button
-          key={number}
-          onClick={() => onPageChange(number)}
-          className={`w-11 h-11 rounded-lg font-bold text-base transition ${
-            currentPage === number
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'bg-white border border-gray-300 text-slate-500 hover:bg-gray-50'
-          }`}
-        >
-          {number}
-        </button>
+      {pageNumbers.map(number => (
+        <button key={number} onClick={() => onPageChange(number)} className={`w-11 h-11 rounded-lg font-bold text-base transition ${currentPage === number ? 'bg-blue-600 text-white shadow-md' : 'bg-white border border-gray-300 text-slate-500 hover:bg-gray-50'}`}>{number}</button>
       ))}
       {end < totalPages && <span className="text-slate-400 px-2">...</span>}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="flex items-center justify-center p-2.5 rounded-lg bg-white border border-gray-300 text-slate-600 hover:bg-gray-100 disabled:opacity-40 transition"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
+      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="flex items-center justify-center p-2.5 rounded-lg bg-white border border-gray-300 text-slate-600 hover:bg-gray-100 disabled:opacity-40 transition"><ChevronRight className="w-5 h-5" /></button>
     </nav>
   );
 };
-
 
 interface PublicSearchProps {
   employees: Employee[];
   clients: Client[];
   payslips: Payslip[];
-  currentUser: AppUser;
+  documentRequests: DocumentRequest[];
+  onRequestDocument: (request: Omit<DocumentRequest, 'id' | 'requestTimestamp' | 'status'>) => Promise<void>;
 }
 
 const ITEMS_PER_PAGE = 12;
 
-const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslips, currentUser }) => {
+const PublicSearch: React.FC<PublicSearchProps> = (props) => {
+  const { employees, clients } = props;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClient, setFilterClient] = useState('all');
   const [filterBranch, setFilterBranch] = useState('all');
   const [hasSearched, setHasSearched] = useState(false);
   const [passwordPromptState, setPasswordPromptState] = useState<{ isOpen: boolean, targetEmployee: Employee | null, error: string }>({ isOpen: false, targetEmployee: null, error: '' });
-  const [detailModalState, setDetailModalState] = useState<{ isOpen: boolean, employee: Employee | null }>({ isOpen: false, employee: null });
+  const [verifiedEmployee, setVerifiedEmployee] = useState<Employee | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
-  
-  const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
 
-  const uniqueBranches = useMemo(() => {
-    const branches = new Set(employees.map(e => e.branch));
-    return ['all', ...Array.from(branches).sort()];
-  }, [employees]);
+  const uniqueBranches = useMemo(() => Array.from(new Set(employees.map(e => e.branch))).sort(), [employees]);
 
   const filteredEmployees = useMemo(() => {
     if (!hasSearched) return [];
@@ -414,18 +142,12 @@ const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslip
     ).sort((a, b) => a.fullName.localeCompare(b.fullName));
   }, [employees, searchTerm, filterClient, filterBranch, hasSearched]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterClient, filterBranch]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterClient, filterBranch]);
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchTerm.trim() || filterClient !== 'all' || filterBranch !== 'all') {
-        setHasSearched(true);
-        setCurrentPage(1);
-    } else {
-        setHasSearched(false);
-    }
+    setHasSearched(!!(searchTerm.trim() || filterClient !== 'all' || filterBranch !== 'all'));
+    setCurrentPage(1);
   };
 
   const paginatedEmployees = useMemo(() => {
@@ -435,140 +157,57 @@ const PublicSearch: React.FC<PublicSearchProps> = ({ employees, clients, payslip
 
   const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
 
-  const handleRequestViewDetails = (employee: Employee) => {
-    setPasswordPromptState({ isOpen: true, targetEmployee: employee, error: '' });
-  };
-
-  const handleClosePasswordPrompt = () => {
-    setPasswordPromptState({ isOpen: false, targetEmployee: null, error: '' });
-  };
-  
   const handlePasswordSubmit = (nikInput: string) => {
     const targetEmployee = passwordPromptState.targetEmployee;
     if (targetEmployee && (nikInput === targetEmployee.id || nikInput === targetEmployee.swaproId)) {
-        handleClosePasswordPrompt();
-        setDetailModalState({ isOpen: true, employee: targetEmployee });
+        setPasswordPromptState({ isOpen: false, targetEmployee: null, error: '' });
+        setVerifiedEmployee(targetEmployee);
     } else {
         setPasswordPromptState(prev => ({ ...prev, error: 'NIK Karyawan atau NIK SWAPRO salah.' }));
     }
   };
 
+  if (verifiedEmployee) {
+    return (
+      <EmployeePortal
+        verifiedEmployee={verifiedEmployee}
+        onLogout={() => setVerifiedEmployee(null)}
+        {...props}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-                <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-8" />
-                <h1 className="text-xl font-bold tracking-tight text-slate-900">Portal Karyawan</h1>
-            </div>
-             <button
-                onClick={() => navigate('/')}
-                className="flex items-center space-x-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali ke Beranda</span>
-            </button>
+            <div className="flex items-center space-x-3"><img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-8" /><h1 className="text-xl font-bold tracking-tight text-slate-900">Portal Karyawan</h1></div>
+            <button onClick={() => navigate('/')} className="flex items-center space-x-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors"><ArrowLeft className="w-4 h-4" /><span>Kembali ke Beranda</span></button>
         </div>
       </header>
       
       <main className="p-6 md:p-10 max-w-6xl mx-auto pb-24">
-        <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Cari Data Diri Anda</h1>
-            <p className="text-lg text-slate-500 mt-2 max-w-2xl mx-auto">Gunakan NIK atau nama lengkap Anda untuk menemukan profil, slip gaji, dan informasi penting lainnya.</p>
-        </div>
-
+        <div className="text-center"><h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Cari Data Diri Anda</h1><p className="text-lg text-slate-500 mt-2 max-w-2xl mx-auto">Gunakan NIK atau nama lengkap Anda untuk menemukan profil, slip gaji, dan informasi penting lainnya.</p></div>
         <form onSubmit={handleSearch} className="my-8 bg-white p-4 md:p-5 rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative md:col-span-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                    <input 
-                        type="text" 
-                        placeholder="Ketik Nama atau NIK..." 
-                        className="w-full pl-12 pr-4 py-3 text-base bg-gray-50 border-gray-200 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="relative">
-                    <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
-                    <select 
-                        className="w-full pl-12 pr-8 py-3 text-base bg-gray-50 border-gray-200 border rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                        value={filterClient}
-                        onChange={e => setFilterClient(e.target.value)}
-                    >
-                        <option value="all">Semua Klien</option>
-                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                </div>
-                <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
-                    <select 
-                        className="w-full pl-12 pr-8 py-3 text-base bg-gray-50 border-gray-200 border rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                        value={filterBranch}
-                        onChange={e => setFilterBranch(e.target.value)}
-                    >
-                        {uniqueBranches.map(branch => (
-                            <option key={branch} value={branch}>
-                                {branch === 'all' ? 'Semua Cabang' : branch}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <div className="relative md:col-span-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" /><input type="text" placeholder="Ketik Nama atau NIK..." className="w-full pl-12 pr-4 py-3 text-base bg-gray-50 border-gray-200 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                <div className="relative"><Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" /><select className="w-full pl-12 pr-8 py-3 text-base bg-gray-50 border-gray-200 border rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" value={filterClient} onChange={e => setFilterClient(e.target.value)}><option value="all">Semua Klien</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                <div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" /><select className="w-full pl-12 pr-8 py-3 text-base bg-gray-50 border-gray-200 border rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" value={filterBranch} onChange={e => setFilterBranch(e.target.value)}><option value="all">Semua Cabang</option>{uniqueBranches.map(branch => (<option key={branch} value={branch}>{branch}</option>))}</select></div>
             </div>
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
-                Cari Karyawan
-            </button>
+            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">Cari Karyawan</button>
         </form>
 
         {hasSearched && (
             <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {paginatedEmployees.map(emp => (
-                        <PublicEmployeeCard 
-                            key={emp.id} 
-                            employee={emp} 
-                            clientName={clientMap.get(emp.clientId) || 'N/A'}
-                            onView={() => handleRequestViewDetails(emp)}
-                        />
-                    ))}
+                    {paginatedEmployees.map(emp => (<PublicEmployeeCard key={emp.id} employee={emp} onView={() => setPasswordPromptState({ isOpen: true, targetEmployee: emp, error: '' })} />))}
                 </div>
-                
-                {filteredEmployees.length > ITEMS_PER_PAGE && (
-                    <Pagination 
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                    />
-                )}
-
-                {filteredEmployees.length === 0 && (
-                    <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm mt-8">
-                        <div className="bg-gray-100 p-4 rounded-full inline-block mb-4">
-                            <Search className="w-8 h-8 text-gray-400"/>
-                        </div>
-                        <p className="text-slate-500 font-semibold">Data Tidak Ditemukan</p>
-                        <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">Pastikan Nama/NIK, Klien, dan Cabang yang Anda masukkan sudah benar.</p>
-                    </div>
-                )}
+                {filteredEmployees.length > ITEMS_PER_PAGE && (<Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />)}
+                {filteredEmployees.length === 0 && (<div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm mt-8"><div className="bg-gray-100 p-4 rounded-full inline-block mb-4"><Search className="w-8 h-8 text-gray-400"/></div><p className="text-slate-500 font-semibold">Data Tidak Ditemukan</p><p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">Pastikan Nama/NIK, Klien, dan Cabang yang Anda masukkan sudah benar.</p></div>)}
             </>
         )}
-
       </main>
-      
-      <PasswordPromptModal 
-        isOpen={passwordPromptState.isOpen}
-        onClose={handleClosePasswordPrompt}
-        onSubmit={handlePasswordSubmit}
-        error={passwordPromptState.error}
-      />
-
-      {detailModalState.isOpen && detailModalState.employee && (
-        <EmployeeDetailModal
-            employee={detailModalState.employee}
-            allData={{ clients, payslips }}
-            onClose={() => setDetailModalState({ isOpen: false, employee: null })}
-        />
-      )}
+      <PasswordPromptModal isOpen={passwordPromptState.isOpen} onClose={() => setPasswordPromptState({ isOpen: false, targetEmployee: null, error: '' })} onSubmit={handlePasswordSubmit} error={passwordPromptState.error} />
     </div>
   );
 };
