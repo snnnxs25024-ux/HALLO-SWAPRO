@@ -1,11 +1,9 @@
 
-
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Employee, Client, Payslip, DocumentRequest, DocumentRequestStatus, DocumentType, EmployeeStatus, AppSettings, EmployeeDataSubmission, SubmissionStatus } from '../types';
 import { LogOut, User as UserIcon, Briefcase, Phone, FileText, Shield, Calendar, CreditCard, Download, FileX, Building, MapPin, Cake, GraduationCap, Lock, Clock, CheckCircle, XCircle, ChevronRight, Eye, EyeOff, PenTool, Eraser, Check, FilePenLine, Home, Heart, Mail, Users, Flag, BookOpen, Award } from 'lucide-react';
 import { useNotifier } from '../components/Notifier';
-import DataUpdateForm from './DataUpdateForm'; // NEW
+import DataUpdateForm from './DataUpdateForm';
 
 const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
@@ -30,7 +28,7 @@ const MaskedField: React.FC<{ label: string; value: string; icon: React.ReactNod
     
     const maskValue = (str: string) => {
         if (!str || str.length < 8) return str;
-        return str.substring(0, 4) + '*'.repeat(str.length - 8) + str.slice(-4);
+        return str.substring(0, 4) + '*'.repeat(Math.max(0, str.length - 8)) + str.slice(-4);
     };
 
     return (
@@ -252,11 +250,11 @@ const EmployeeProfileView: React.FC<{
     clients: Client[];
     payslips: Payslip[];
     documentRequests: DocumentRequest[];
-    appSettings: AppSettings[]; // NEW
-    employeeSubmissions: EmployeeDataSubmission[]; // NEW
+    appSettings: AppSettings[];
+    employeeSubmissions: EmployeeDataSubmission[];
     onRequestDocument: (request: Omit<DocumentRequest, 'id' | 'status' | 'requestTimestamp'>) => void;
     onUpdateEmployee: (employee: Partial<Employee>) => Promise<void>;
-    onCreateSubmission: (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => Promise<void>; // NEW
+    onCreateSubmission: (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => Promise<void>;
 }> = ({ employee, clients, payslips, documentRequests, appSettings, employeeSubmissions, onRequestDocument, onUpdateEmployee, onCreateSubmission }) => {
     const [activeTab, setActiveTab] = useState('profil');
     const [showSignature, setShowSignature] = useState(false);
@@ -264,7 +262,6 @@ const EmployeeProfileView: React.FC<{
     const [selectedPayslipYear, setSelectedPayslipYear] = useState(new Date().getFullYear());
     const notifier = useNotifier();
 
-    // --- NEW STATE & LOGIC FOR DATA UPDATE ---
     const dataUpdateSetting = useMemo(() => {
         const setting = appSettings.find(s => s.key === 'data_update_form');
         return setting ? setting.value : { is_active: false };
@@ -296,8 +293,8 @@ const EmployeeProfileView: React.FC<{
     };
     
     const DetailSection: React.FC<{ title: string; children: React.ReactNode; grid?: boolean }> = ({ title, children, grid = true }) => (
-      <div className="mb-10 last:mb-0">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 pb-2 border-b-2 border-slate-100 uppercase tracking-wider">{title}</h4>
+      <div className="mb-12 last:mb-0">
+        <h4 className="text-xs font-black text-slate-400 mb-6 pb-2 border-b border-slate-100 uppercase tracking-[0.2em]">{title}</h4>
         <div className={grid ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-4"}>
           {children}
         </div>
@@ -306,17 +303,17 @@ const EmployeeProfileView: React.FC<{
     
     const renderDocumentLink = (label: string, url?: string) => (
         url ? (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
-                <div className="flex items-center space-x-3 min-w-0">
-                    <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span className="font-semibold text-sm text-slate-700 truncate">{label}</span>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-white hover:bg-blue-50 rounded-2xl transition-all border border-slate-100 shadow-sm hover:shadow-md">
+                <div className="flex items-center space-x-4 min-w-0">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><FileText className="w-5 h-5 shrink-0" /></div>
+                    <span className="font-bold text-sm text-slate-700 truncate">{label}</span>
                 </div>
-                <Eye className="w-5 h-5 text-slate-400 ml-2" />
+                <Eye className="w-5 h-5 text-slate-300 ml-2" />
             </a>
         ) : (
-             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg opacity-60 border border-gray-100">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <span className="text-sm text-gray-500 italic">{label} belum tersedia</span>
+             <div className="flex items-center space-x-4 p-4 bg-slate-50/50 rounded-2xl opacity-60 border border-dashed border-slate-200">
+                <div className="p-2 bg-slate-100 text-slate-400 rounded-lg"><FileText className="w-5 h-5" /></div>
+                <span className="text-sm text-slate-400 italic font-medium">{label} belum tersedia</span>
             </div>
         )
     );
@@ -337,44 +334,58 @@ const EmployeeProfileView: React.FC<{
     }
 
     return (
-        <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200/80 border border-slate-200 overflow-hidden flex flex-col min-h-[70vh]">
+        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 border border-slate-200 overflow-hidden flex flex-col min-h-[70vh]">
             {showSignature && <SignatureModal onSave={handleSaveSignature} onClose={() => setShowSignature(false)} />}
             
-            <div className="p-6 md:p-8 bg-slate-50/70 border-b border-slate-200/80 text-center">
-                <img 
-                    src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} 
-                    alt={employee.fullName} 
-                    className="w-24 h-24 rounded-full object-cover mx-auto ring-4 ring-white shadow-lg"
-                />
-                <h2 className="mt-4 text-3xl font-black text-slate-900 tracking-tight">{employee.fullName}</h2>
-                <p className="text-base text-slate-500 font-mono mt-1">{employee.id} / {employee.swaproId}</p>
-                <div className={`mt-3 inline-block text-xs font-bold uppercase px-3 py-1.5 rounded-full ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
-                    {employee.status}
+            <div className="p-8 md:p-12 bg-slate-50/50 border-b border-slate-100 text-center relative">
+                <div className="absolute top-6 left-6 md:top-10 md:left-10">
+                    <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                        {employee.status}
+                    </div>
+                </div>
+                <div className="relative inline-block">
+                    <img 
+                        src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} 
+                        alt={employee.fullName} 
+                        className="w-32 h-32 rounded-full object-cover mx-auto ring-8 ring-white shadow-2xl"
+                    />
+                    <div className="absolute bottom-1 right-1 bg-blue-600 p-2 rounded-full border-4 border-white shadow-lg text-white">
+                        <Shield className="w-4 h-4" />
+                    </div>
+                </div>
+                <h2 className="mt-6 text-3xl font-black text-slate-900 tracking-tight leading-none">{employee.fullName}</h2>
+                <div className="mt-3 flex items-center justify-center space-x-2 text-slate-400 font-mono text-sm font-bold">
+                    <span>{employee.id}</span>
+                    <span className="opacity-30">/</span>
+                    <span>{employee.swaproId}</span>
                 </div>
             </div>
 
-            <div className="px-4 bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b border-slate-100">
-                <nav className="flex space-x-1 justify-center overflow-x-auto no-scrollbar py-2">
+            {/* TAB NAVIGATION FIXED: Removed justify-center and improved spacing for horizontal scroll */}
+            <div className="bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 shadow-sm overflow-hidden">
+                <nav className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-4 px-6">
                     {portalTabs.map(tab => (
                         <button 
                             key={tab.id} 
                             onClick={() => setActiveTab(tab.id)} 
-                            className={`flex items-center space-x-2.5 py-3 px-5 rounded-2xl font-bold text-sm transition-all duration-300 ${
+                            className={`flex items-center space-x-2.5 py-2.5 px-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 shrink-0 ${
                                 activeTab === tab.id 
-                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
-                                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 translate-y-[-1px]' 
+                                : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
                             }`}
                         >
                             {tab.icon}
-                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span>{tab.label}</span>
                         </button>
                     ))}
+                    {/* Extra padding at end for mobile scroll */}
+                    <div className="w-6 shrink-0 md:hidden"></div>
                 </nav>
             </div>
 
-            <div className="p-6 md:p-10 flex-1">
+            <div className="p-6 md:p-12 flex-1 bg-white">
                 {activeTab === 'profil' && (
-                    <DetailSection title="Data Pribadi">
+                    <DetailSection title="Identitas Pribadi">
                         <MaskedField label="NIK Identitas (KTP)" value={employee.ktpId} icon={<UserIcon className="w-4 h-4" />} />
                         <InfoField label="Email Pribadi" value={employee.email} icon={<Mail className="w-4 h-4" />} />
                         <InfoField label="WhatsApp" value={employee.whatsapp} icon={<Phone className="w-4 h-4" />} />
@@ -398,9 +409,11 @@ const EmployeeProfileView: React.FC<{
                             <InfoField label="Provinsi" value={employee.addressKtp?.province} icon={<Home className="w-4 h-4" />} />
                             <InfoField label="Kode Pos" value={employee.addressKtp?.postalCode} icon={<Home className="w-4 h-4" />} />
                         </DetailSection>
-                        <DetailSection title="Alamat Domisili">
+                        <DetailSection title="Alamat Domisili Saat Ini">
                             {employee.addressDomicile?.isSameAsKtp ? (
-                                <p className="md:col-span-2 text-sm text-slate-500 italic p-4 bg-slate-50 rounded-xl">Sama dengan alamat KTP.</p>
+                                <div className="md:col-span-2 p-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200 text-center">
+                                    <p className="text-sm text-slate-400 font-bold uppercase tracking-widest italic">Sama dengan alamat KTP</p>
+                                </div>
                             ) : (
                                 <>
                                     <InfoField className="md:col-span-2" label="Alamat Lengkap" value={employee.addressDomicile?.address} icon={<MapPin className="w-4 h-4" />} />
@@ -418,7 +431,7 @@ const EmployeeProfileView: React.FC<{
 
                 {activeTab === 'keluarga' && (
                     <>
-                        <DetailSection title="Data Orang Tua">
+                        <DetailSection title="Informasi Orang Tua">
                             <InfoField label="Nama Ibu Kandung" value={employee.familyData?.motherName} icon={<UserIcon className="w-4 h-4" />} />
                             <InfoField label="Tanggal Lahir Ibu" value={employee.familyData?.motherBirthDate ? new Date(employee.familyData.motherBirthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'} icon={<Cake className="w-4 h-4" />} />
                             <InfoField label="Nama Ayah Kandung" value={employee.familyData?.fatherName} icon={<UserIcon className="w-4 h-4" />} />
@@ -429,92 +442,96 @@ const EmployeeProfileView: React.FC<{
                             <InfoField label="Hubungan" value={employee.emergencyContact?.relationship} icon={<Heart className="w-4 h-4" />} />
                             <InfoField label="No. Telepon" value={employee.emergencyContact?.phone} icon={<Phone className="w-4 h-4" />} />
                         </DetailSection>
-                        <DetailSection title="Data Anak" grid={false}>
+                        <DetailSection title="Daftar Anggota Keluarga (Anak)" grid={false}>
                             {(employee.familyData?.childrenData && employee.familyData.childrenData.length > 0) ? (
                                 employee.familyData.childrenData.map((child, index) => (
-                                    <div key={index} className="flex items-center space-x-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                        <UserIcon className="w-5 h-5 text-blue-500" />
+                                    <div key={index} className="flex items-center space-x-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-200">
+                                        <div className="p-3 bg-white text-blue-600 rounded-xl shadow-sm border border-slate-100"><UserIcon className="w-5 h-5" /></div>
                                         <div className="flex-1">
-                                            <p className="font-semibold text-slate-800">{child.name}</p>
-                                            <p className="text-xs text-slate-500">Lahir: {child.birthDate ? new Date(child.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'}</p>
+                                            <p className="font-black text-slate-800 uppercase text-xs tracking-tight">{child.name}</p>
+                                            <p className="text-xs text-slate-400 font-bold mt-1">Lahir: {child.birthDate ? new Date(child.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'}</p>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-sm text-slate-500 italic p-4 bg-slate-50 rounded-xl text-center">Belum ada data anak.</p>
+                                <div className="p-10 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 text-center">
+                                    <p className="text-sm text-slate-400 font-bold uppercase tracking-widest italic">Belum ada data anak terdaftar</p>
+                                </div>
                             )}
                         </DetailSection>
                     </>
                 )}
 
                 {activeTab === 'pendidikan' && (
-                    <DetailSection title="Detail Pendidikan Terakhir">
+                    <DetailSection title="Jenjang Pendidikan Terakhir">
                         <InfoField label="Pendidikan Terakhir" value={employee.lastEducation} icon={<GraduationCap className="w-4 h-4" />} />
                         <InfoField label="Nama Sekolah/Universitas" value={employee.educationDetails?.universityName} icon={<Building className="w-4 h-4" />} />
-                        <InfoField label="Jurusan" value={employee.educationDetails?.major} icon={<BookOpen className="w-4 h-4" />} />
+                        <InfoField label="Jurusan / Konsentrasi" value={employee.educationDetails?.major} icon={<BookOpen className="w-4 h-4" />} />
                         {['D3', 'S1', 'S2', 'S3'].includes(employee.lastEducation || '') && (
-                            <InfoField label="IPK" value={employee.educationDetails?.gpa} icon={<Award className="w-4 h-4" />} />
+                            <InfoField label="Indeks Prestasi Kumulatif (IPK)" value={employee.educationDetails?.gpa} icon={<Award className="w-4 h-4" />} />
                         )}
                         <InfoField label="Tahun Masuk" value={employee.educationDetails?.entryYear} icon={<Calendar className="w-4 h-4" />} />
-                        <InfoField label="Tahun Lulus" value={employee.educationDetails?.graduationYear} icon={<Calendar className="w-4 h-4" />} />
+                        <InfoField label="Tahun Kelulusan" value={employee.educationDetails?.graduationYear} icon={<Calendar className="w-4 h-4" />} />
                     </DetailSection>
                 )}
 
                 {activeTab === 'pekerjaan' && (
-                    <DetailSection title="Status Pekerjaan">
-                        <InfoField label="Jabatan" value={employee.position} icon={<Briefcase className="w-4 h-4" />} />
+                    <DetailSection title="Data Kepegawaian">
+                        <InfoField label="Jabatan Saat Ini" value={employee.position} icon={<Briefcase className="w-4 h-4" />} />
                         <InfoField label="Penempatan Klien" value={clientMap.get(employee.clientId || '')} icon={<Building className="w-4 h-4" />} />
-                        <InfoField label="Cabang" value={employee.branch} icon={<MapPin className="w-4 h-4" />} />
+                        <InfoField label="Cabang Operasional" value={employee.branch} icon={<MapPin className="w-4 h-4" />} />
                         <InfoField label="Tanggal Bergabung" value={employee.joinDate ? new Date(employee.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
-                        <InfoField label="Akhir Kontrak (EOC)" value={employee.endDate ? new Date(employee.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
-                        <InfoField label="Kontrak Ke-" value={String(employee.contractNumber)} icon={<FileText className="w-4 h-4" />} />
+                        <InfoField label="End of Contract (EOC)" value={employee.endDate ? new Date(employee.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
+                        <InfoField label="Kontrak Kerja Ke-" value={String(employee.contractNumber)} icon={<FileText className="w-4 h-4" />} />
                         <div className="md:col-span-2">
-                            <InfoField label="Catatan Surat Peringatan (SP)" value={employee.disciplinaryActions} icon={<Shield className="w-4 h-4" />} />
+                            <InfoField label="Catatan Kedisiplinan / SP" value={employee.disciplinaryActions} icon={<Shield className="w-4 h-4" />} />
                         </div>
                     </DetailSection>
                 )}
 
                 {activeTab === 'finansial' && (
                     <>
-                        <DetailSection title="Rekening Bank">
+                        <DetailSection title="Rekening Payroll">
                             <MaskedField label="Nomor Rekening" value={employee.bankAccount?.number} icon={<CreditCard className="w-4 h-4" />} />
-                            <InfoField label="Bank Penerima" value={employee.bankAccount?.bankName} icon={<Building className="w-4 h-4" />} />
+                            <InfoField label="Nama Bank" value={employee.bankAccount?.bankName} icon={<Building className="w-4 h-4" />} />
                              <div className="md:col-span-2">
-                                <InfoField label="Nama Pemilik Rekening" value={employee.bankAccount?.holderName} icon={<UserIcon className="w-4 h-4" />} />
+                                <InfoField label="Atas Nama Pemilik Rekening" value={employee.bankAccount?.holderName} icon={<UserIcon className="w-4 h-4" />} />
                             </div>
                         </DetailSection>
-                         <DetailSection title="Jaminan Sosial & Pajak">
+                         <DetailSection title="Informasi Perpajakan & BPJS">
                             <MaskedField label="BPJS Ketenagakerjaan" value={employee.bpjs?.ketenagakerjaan} icon={<Shield className="w-4 h-4" />} />
                             <MaskedField label="BPJS Kesehatan" value={employee.bpjs?.kesehatan} icon={<Shield className="w-4 h-4" />} />
-                             <MaskedField label="NPWP Pribadi" value={employee.npwp} icon={<CreditCard className="w-4 h-4" />} />
+                             <MaskedField label="NPWP (Pajak)" value={employee.npwp} icon={<CreditCard className="w-4 h-4" />} />
                         </DetailSection>
                     </>
                 )}
 
                 {activeTab === 'dokumen' && (
-                    <div className="space-y-10">
-                        <DetailSection title="Tanda Tangan Digital (E-Signature)" grid={false}>
-                            <div className="p-6 bg-blue-50/80 rounded-[1.5rem] border border-blue-200 text-center">
+                    <div className="space-y-12">
+                        <DetailSection title="Legalitas: Tanda Tangan Digital" grid={false}>
+                            <div className="p-8 bg-blue-50/50 rounded-[2rem] border border-blue-100 text-center shadow-inner">
                                 {signatureData ? (
                                     <div className="space-y-4">
-                                        <div className="inline-block p-4 bg-white rounded-2xl shadow-lg border border-slate-100">
-                                            <img src={signatureData} alt="Signature" className="h-24 mx-auto" />
-                                        </div>
-                                        <p className="text-xs font-black text-blue-600 uppercase tracking-widest">Tanda Tangan Tersimpan</p>
-                                        <button onClick={() => setShowSignature(true)} className="text-[10px] font-black text-slate-400 underline uppercase tracking-widest">Ubah Tanda Tangan</button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-blue-600">
-                                            <PenTool className="w-8 h-8" />
+                                        <div className="inline-block p-6 bg-white rounded-3xl shadow-xl border border-white">
+                                            <img src={signatureData} alt="Signature" className="h-28 mx-auto" />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-black text-slate-800">Siapkan Tanda Tangan Anda</h4>
-                                            <p className="text-xs text-slate-500 font-medium mt-1">Gunakan untuk persetujuan kontrak digital di masa depan.</p>
+                                            <p className="text-xs font-black text-blue-600 uppercase tracking-widest">E-Signature Terverifikasi</p>
+                                            <button onClick={() => setShowSignature(true)} className="mt-2 text-[10px] font-black text-slate-400 hover:text-blue-600 underline uppercase tracking-widest transition-colors">Perbarui Tanda Tangan</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 py-4">
+                                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto text-blue-600 shadow-xl border-4 border-blue-50">
+                                            <PenTool className="w-10 h-10" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-black text-slate-800">Aktifkan E-Signature</h4>
+                                            <p className="text-sm text-slate-500 font-medium mt-1 max-w-xs mx-auto">Tanda tangan digital diperlukan untuk mempercepat proses administrasi kontrak Anda.</p>
                                         </div>
                                         <button 
                                             onClick={() => setShowSignature(true)}
-                                            className="px-8 py-3 bg-blue-600 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all uppercase tracking-widest"
+                                            className="px-10 py-4 bg-blue-600 text-white font-black text-xs rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all uppercase tracking-widest"
                                         >
                                             Buat Sekarang
                                         </button>
@@ -523,72 +540,78 @@ const EmployeeProfileView: React.FC<{
                             </div>
                         </DetailSection>
 
-                        <DetailSection title="Dokumen Resmi" grid={false}>
+                        <DetailSection title="Arsip Dokumen Kerja" grid={false}>
                             {[
                                 {type: DocumentType.PKWT_NEW, url: employee.documents?.pkwtNewHire, name: "PKWT New Hire"}, 
                                 {type: DocumentType.SP_LETTER, url: employee.documents?.spLetter, name: "Surat Peringatan (SP)"}
                             ].map(doc => (
-                                <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 p-5 bg-slate-50 rounded-[1.5rem] border border-slate-200" key={doc.type}>
-                                    <div className="flex items-center space-x-4 flex-1">
-                                        <div className="p-3 bg-white text-blue-600 rounded-xl shadow-sm border border-slate-100"><FileText className="w-6 h-6" /></div>
-                                        <div>
-                                            <span className="font-black text-sm text-slate-800 uppercase tracking-tight">{doc.name}</span>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dokumen Terverifikasi</p>
+                                <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100 transition-all hover:bg-white hover:shadow-lg" key={doc.type}>
+                                    <div className="flex items-center space-x-5 flex-1 min-w-0">
+                                        <div className="p-4 bg-white text-blue-600 rounded-2xl shadow-sm border border-slate-50"><FileText className="w-7 h-7" /></div>
+                                        <div className="min-w-0">
+                                            <span className="font-black text-base text-slate-800 uppercase tracking-tight block truncate">{doc.name}</span>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Official Document</p>
                                         </div>
                                     </div>
-                                    <DocumentActionButton employeeId={employee.id} documentType={doc.type} documentIdentifier={doc.type} documentName={doc.name} fileUrl={doc.url} requests={documentRequests} onRequest={onRequestDocument} fullWidth={true} />
+                                    <div className="md:ml-4">
+                                        <DocumentActionButton employeeId={employee.id} documentType={doc.type} documentIdentifier={doc.type} documentName={doc.name} fileUrl={doc.url} requests={documentRequests} onRequest={onRequestDocument} fullWidth={true} />
+                                    </div>
                                 </div>
                             ))}
                         </DetailSection>
-                         <DetailSection title="Dokumen Pribadi" grid={false}>
-                            {renderDocumentLink("Foto KTP", employee.documents?.photoKtpUrl)}
-                            {renderDocumentLink("Foto NPWP", employee.documents?.photoNpwpUrl)}
-                            {renderDocumentLink("Foto Kartu Keluarga (KK)", employee.documents?.photoKkUrl)}
+                         <DetailSection title="Berkas Identitas" grid={false}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {renderDocumentLink("Foto KTP Asli", employee.documents?.photoKtpUrl)}
+                                {renderDocumentLink("Foto Kartu NPWP", employee.documents?.photoNpwpUrl)}
+                                {renderDocumentLink("Foto Kartu Keluarga", employee.documents?.photoKkUrl)}
+                            </div>
                         </DetailSection>
                     </div>
                 )}
 
                 {activeTab === 'slip gaji' && (
-                    <DetailSection title={`Histori Slip Gaji Tahun ${selectedPayslipYear}`}>
-                        {MONTH_NAMES.map((month, index) => { 
-                            const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`; 
-                            const payslipForMonth = employeePayslips.find(p => p.period === period);
-                            return (
-                                <div key={month} className={`p-4 rounded-2xl border-2 transition-all ${payslipForMonth ? 'bg-white border-slate-100 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-70'}`}>
-                                    <span className="font-black text-sm text-slate-400 mb-3 block">{month}</span>
-                                    {payslipForMonth ? (
-                                        <DocumentActionButton 
-                                            employeeId={employee.id} 
-                                            documentType={DocumentType.PAYSLIP} 
-                                            documentIdentifier={period} 
-                                            documentName={`Slip Gaji ${month} ${selectedPayslipYear}`} 
-                                            fileUrl={payslipForMonth.fileUrl} 
-                                            requests={documentRequests} 
-                                            onRequest={onRequestDocument} 
-                                            fullWidth={true} 
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center space-x-2 w-full px-3 py-3 bg-slate-100 text-slate-400 rounded-xl text-xs font-black uppercase tracking-widest cursor-not-allowed">
-                                            <FileX className="w-4 h-4" />
-                                            <span>Tidak Tersedia</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ); 
-                        })}
+                    <DetailSection title={`Rekapitulasi Slip Gaji ${selectedPayslipYear}`} grid={false}>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {MONTH_NAMES.map((month, index) => { 
+                                const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`; 
+                                const payslipForMonth = employeePayslips.find(p => p.period === period);
+                                return (
+                                    <div key={month} className={`p-5 rounded-[2rem] border-2 transition-all flex flex-col ${payslipForMonth ? 'bg-white border-slate-100 shadow-xl shadow-slate-200/50' : 'bg-slate-50/50 border-slate-50 opacity-60'}`}>
+                                        <span className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 block">{month}</span>
+                                        {payslipForMonth ? (
+                                            <DocumentActionButton 
+                                                employeeId={employee.id} 
+                                                documentType={DocumentType.PAYSLIP} 
+                                                documentIdentifier={period} 
+                                                documentName={`Slip Gaji ${month} ${selectedPayslipYear}`} 
+                                                fileUrl={payslipForMonth.fileUrl} 
+                                                requests={documentRequests} 
+                                                onRequest={onRequestDocument} 
+                                                fullWidth={true} 
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center space-x-2 w-full px-3 py-4 bg-slate-100/50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">
+                                                <FileX className="w-4 h-4" />
+                                                <span>Kosong</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ); 
+                            })}
+                        </div>
                     </DetailSection>
                 )}
 
                 {activeTab === 'pengkinian data' && (
-                    <>
+                    <div className="animate-fadeIn">
                         {pendingSubmission ? (
-                             <div className="text-center p-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                                <Clock className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                                <h3 className="text-lg font-bold text-slate-800">Data Anda Sedang Direview</h3>
-                                <p className="text-slate-500 mt-2">
-                                    Data yang Anda kirim pada {new Date(pendingSubmission.submitted_at).toLocaleString('id-ID')} sedang menunggu persetujuan dari PIC. 
-                                    <br />
-                                    Anda akan menerima notifikasi jika sudah disetujui.
+                             <div className="text-center py-16 px-6 bg-amber-50/50 rounded-[2.5rem] border-2 border-dashed border-amber-200">
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto text-amber-500 shadow-xl mb-6">
+                                    <Clock className="w-10 h-10" />
+                                </div>
+                                <h3 className="text-xl font-black text-slate-800 tracking-tight">Menunggu Verifikasi PIC</h3>
+                                <p className="text-sm text-slate-500 mt-3 leading-relaxed max-w-sm mx-auto font-medium">
+                                    Data Anda yang dikirim pada <span className="text-amber-600 font-bold">{new Date(pendingSubmission.submitted_at).toLocaleString('id-ID')}</span> sedang kami tinjau. Fitur pengkinian akan terbuka kembali setelah disetujui.
                                 </p>
                             </div>
                         ) : (
@@ -597,7 +620,7 @@ const EmployeeProfileView: React.FC<{
                                 onCreateSubmission={onCreateSubmission}
                            />
                         )}
-                    </>
+                    </div>
                 )}
 
             </div>
@@ -611,30 +634,32 @@ interface EmployeePortalProps {
     clients: Client[];
     payslips: Payslip[];
     documentRequests: DocumentRequest[];
-    appSettings: AppSettings[]; // NEW
-    employeeSubmissions: EmployeeDataSubmission[]; // NEW
+    appSettings: AppSettings[];
+    employeeSubmissions: EmployeeDataSubmission[];
     onRequestDocument: (request: Omit<DocumentRequest, 'id' | 'status' | 'requestTimestamp'>) => Promise<void>;
     onUpdateEmployee: (employee: Partial<Employee>) => Promise<void>;
-    onCreateSubmission: (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => Promise<void>; // NEW
+    onCreateSubmission: (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => Promise<void>;
 }
 
 const EmployeePortal: React.FC<EmployeePortalProps> = ({ verifiedEmployee, onLogout, ...allData }) => {
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col p-4 md:p-8">
-            <header className="max-w-4xl mx-auto w-full flex items-center justify-between mb-6">
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col p-4 md:p-10">
+            <header className="max-w-4xl mx-auto w-full flex items-center justify-between mb-8 px-4">
                 <div className="flex items-center space-x-3">
-                    <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-8" />
-                    <span className="text-xl font-bold text-slate-800 tracking-tight">PORTAL KARYAWAN</span>
+                    <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-10" />
+                    <div className="h-6 w-px bg-slate-300 mx-2"></div>
+                    <span className="text-xs font-black text-slate-800 tracking-[0.3em] uppercase">Employee Portal</span>
                 </div>
                 <button 
                     onClick={onLogout} 
-                    className="p-3 bg-white text-red-600 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 hover:bg-red-50 transition-all active:scale-90"
+                    className="p-3 bg-white text-red-500 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:bg-red-50 transition-all active:scale-90"
+                    title="Keluar dari Portal"
                 >
                     <LogOut className="w-5 h-5" />
                 </button>
             </header>
             
-            <main className="max-w-4xl mx-auto w-full pb-10">
+            <main className="max-w-4xl mx-auto w-full pb-20 animate-fadeIn">
                 <EmployeeProfileView 
                     employee={verifiedEmployee} 
                     clients={allData.clients} 
@@ -646,7 +671,17 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ verifiedEmployee, onLog
                     onUpdateEmployee={allData.onUpdateEmployee}
                     onCreateSubmission={allData.onCreateSubmission}
                 />
+                
+                <p className="text-center mt-10 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] opacity-40">
+                    Sistem Manajemen Kepegawaian • PT SWAPRO International
+                </p>
             </main>
+            
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+            `}</style>
         </div>
     );
 };
