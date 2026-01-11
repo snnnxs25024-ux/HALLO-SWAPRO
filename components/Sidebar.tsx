@@ -9,7 +9,8 @@ import {
   Building2,
   Receipt,
   ShieldCheck,
-  FileArchive, // Icon baru
+  FileArchive,
+  FilePenLine, // NEW ICON
   Menu,
   X
 } from 'lucide-react';
@@ -28,6 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingRequestCount }
     { to: '/', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
     { to: '/database', icon: <Database className="w-5 h-5" />, label: 'Data Base' },
     { to: '/dossier', icon: <FileArchive className="w-5 h-5" />, label: 'Pemberkasan' },
+    { to: '/data-update', icon: <FilePenLine className="w-5 h-5" />, label: 'Pengkinian Data' }, // NEW LINK
     { to: '/clients', icon: <Building2 className="w-5 h-5" />, label: 'Kelola Klien' },
     { to: '/payslips', icon: <Receipt className="w-5 h-5" />, label: 'Slip Gaji' },
     { 

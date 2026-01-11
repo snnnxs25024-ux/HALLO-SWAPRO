@@ -1,7 +1,9 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip, DocumentRequest, DocumentRequestStatus } from './types';
+import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip, DocumentRequest, DocumentRequestStatus, AppSettings, EmployeeDataSubmission, SubmissionStatus } from './types';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -18,6 +20,8 @@ import { Loader } from 'lucide-react';
 import { useNotifier } from './components/Notifier';
 import AudioPlayer from './components/AudioPlayer';
 import Dossier from './pages/Dossier';
+import DataUpdate from './pages/DataUpdate'; // NEW
+import { isObject, mergeWith } from './utils'; // NEW
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
@@ -32,6 +36,8 @@ const App: React.FC = () => {
     employeeChats: {},
     payslips: [],
     documentRequests: [],
+    appSettings: [], // NEW
+    employeeSubmissions: [], // NEW
   });
   const [loading, setLoading] = useState(true);
   const notifier = useNotifier();
@@ -45,17 +51,23 @@ const App: React.FC = () => {
           { data: employeesData, error: employeesError },
           { data: payslipsData, error: payslipsError },
           { data: requestsData, error: requestsError },
+          { data: settingsData, error: settingsError }, // NEW
+          { data: submissionsData, error: submissionsError }, // NEW
         ] = await Promise.all([
           supabase.from('clients').select('*'),
           supabase.from('employees').select('*'),
           supabase.from('payslips').select('*'),
           supabase.from('document_requests').select('*'),
+          supabase.from('app_settings').select('*'), // NEW
+          supabase.from('employee_data_submissions').select('*'), // NEW
         ]);
 
         if (clientsError) throw clientsError;
         if (employeesError) throw employeesError;
         if (payslipsError) throw payslipsError;
         if (requestsError) throw requestsError;
+        if (settingsError) throw settingsError; // NEW
+        if (submissionsError) throw submissionsError; // NEW
         
         setState(prev => ({
           ...prev,
@@ -63,12 +75,15 @@ const App: React.FC = () => {
           employees: employeesData || [],
           payslips: payslipsData || [],
           documentRequests: requestsData || [],
+          appSettings: settingsData || [], // NEW
+          employeeSubmissions: submissionsData || [], // NEW
           employeeChats: {}, 
         }));
       } catch (error: any)
       {
         console.error("Error fetching initial data from Supabase:", error);
-        notifier.addNotification(`Gagal memuat data awal: ${error.message}`, 'error');
+        const errorMessage = error?.message || 'Terjadi kesalahan tidak diketahui. Lihat konsol untuk detail.';
+        notifier.addNotification(`Gagal memuat data awal: ${errorMessage}`, 'error');
       } finally {
         setLoading(false);
       }
@@ -96,18 +111,20 @@ const App: React.FC = () => {
   
   // --- CRUD OPERATIONS FOR EMPLOYEES ---
   const handleEmployeeDataChange = async (employeesToUpsert: Partial<Employee>[]) => {
+    // This logic correctly merges partial data, so we can keep it.
     const employeeMap = new Map(state.employees.map(emp => [emp.id, emp]));
     const recordsToUpsert = employeesToUpsert.map(partialEmp => {
         if (!partialEmp.id) return null;
         const existingEmp = employeeMap.get(partialEmp.id) || {};
-        const mergedEmp: Employee = {
-            ...(existingEmp as Employee), ...partialEmp,
-            bankAccount: { ...((existingEmp as any).bankAccount || {}), ...(partialEmp.bankAccount || {}) },
-            bpjs: { ...((existingEmp as any).bpjs || {}), ...(partialEmp.bpjs || {}) },
-            documents: { ...((existingEmp as any).documents || {}), ...(partialEmp.documents || {}) }
+        // Fix: The custom mergeWith function only supports two source objects.
+        // Chaining them ensures a correct deep merge without mutating the original object.
+        const customizer = (objValue: any, srcValue: any) => {
+          if (Array.isArray(objValue)) {
+            return srcValue; // Replace arrays, don't merge them
+          }
         };
-        return mergedEmp;
-    }).filter((e): e is Employee => e !== null);
+        return mergeWith(mergeWith({}, existingEmp, customizer), partialEmp, customizer);
+    }).filter((e): e is Employee => e !== null && !!e.id);
 
     if (recordsToUpsert.length === 0) {
         notifier.addNotification("Tidak ada data valid untuk diimpor.", "info"); return;
@@ -133,14 +150,41 @@ const App: React.FC = () => {
     }
   };
 
-  const updateEmployee = async (employee: Employee) => {
-    const { data, error } = await supabase.from('employees').update(employee).eq('id', employee.id).select();
-    if (error) { notifier.addNotification(`Gagal memperbarui karyawan: ${error.message}`, 'error'); return; }
-    if (data) {
-        setState(prev => ({ ...prev, employees: prev.employees.map(e => e.id === employee.id ? data[0] : e) }));
-        notifier.addNotification('Data karyawan berhasil diperbarui.', 'success');
-    }
+  const updateEmployee = async (employeeUpdate: Partial<Employee>) => {
+      if (!employeeUpdate.id) {
+          notifier.addNotification("Pembaruan gagal: ID karyawan tidak valid.", "error");
+          return;
+      }
+      const { id, ...updateData } = employeeUpdate;
+      
+      const existingEmployee = state.employees.find(e => e.id === id);
+      if (!existingEmployee) {
+          notifier.addNotification("Pembaruan gagal: Karyawan tidak ditemukan.", "error");
+          return;
+      }
+
+      // Deep merge the update with existing data
+      // Fix: The custom mergeWith function only supports two source objects.
+      // Chaining them ensures a correct deep merge without mutating the original object.
+      const customizer = (objValue: any, srcValue: any) => {
+        if (Array.isArray(objValue)) {
+          return srcValue; // Replace arrays, don't merge them
+        }
+      };
+      const mergedData = mergeWith(mergeWith({}, existingEmployee, customizer), updateData, customizer);
+
+      const { data, error } = await supabase.from('employees').update(mergedData).eq('id', id).select();
+
+      if (error) { 
+          notifier.addNotification(`Gagal memperbarui karyawan: ${error.message}`, 'error'); 
+          return; 
+      }
+      if (data && data.length > 0) {
+          setState(prev => ({ ...prev, employees: prev.employees.map(e => e.id === id ? data[0] : e) }));
+          notifier.addNotification('Data karyawan berhasil diperbarui.', 'success');
+      }
   };
+
 
   const deleteEmployee = async (employeeId: string) => {
     const { error } = await supabase.from('employees').delete().eq('id', employeeId);
@@ -265,6 +309,71 @@ const App: React.FC = () => {
     }
   };
 
+  // --- DATA UPDATE MODULE HANDLERS (NEW) ---
+  const handleUpdateSettings = async (settings: AppSettings) => {
+      // FIX: Switched from direct upsert to a hypothetical secure RPC call ('update_app_setting').
+      // This is the standard pattern to perform operations requiring elevated privileges
+      // from the client-side, bypassing Row-Level Security policies that block
+      // anonymous writes to sensitive tables like 'app_settings'.
+      const { error } = await supabase.rpc('update_app_setting', {
+        key_input: settings.key,
+        value_input: settings.value
+      });
+
+      if (error) {
+          notifier.addNotification(`Gagal menyimpan pengaturan: ${error.message}`, 'error');
+          return;
+      }
+      
+      // Optimistically update the local state, as RPC calls don't return the updated row by default.
+      // This provides a faster UI response and handles both new and existing settings correctly.
+      setState(prev => {
+          const newSettingsMap = new Map(prev.appSettings.map(s => [s.key, s]));
+          newSettingsMap.set(settings.key, settings);
+          return { ...prev, appSettings: Array.from(newSettingsMap.values()) };
+      });
+      notifier.addNotification('Pengaturan berhasil disimpan.', 'success');
+  };
+
+  const handleCreateSubmission = async (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => {
+      const newSubmission = {
+          ...submission,
+          status: SubmissionStatus.PENDING_REVIEW,
+          submitted_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase.from('employee_data_submissions').insert(newSubmission).select();
+      if (error) {
+          notifier.addNotification(`Gagal mengirim data: ${error.message}`, 'error');
+          throw error;
+      }
+      if (data) {
+          setState(prev => ({...prev, employeeSubmissions: [...prev.employeeSubmissions, data[0]]}));
+          notifier.addNotification('Data Anda berhasil dikirim untuk direview.', 'success');
+      }
+  };
+
+  const handleUpdateSubmissionStatus = async (submissionId: string, status: SubmissionStatus, notes?: string) => {
+      if (!state.currentUser) return;
+      const updatePayload = {
+          status: status,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: state.currentUser.id,
+          review_notes: notes,
+      };
+      const { data, error } = await supabase.from('employee_data_submissions').update(updatePayload).eq('id', submissionId).select();
+      if (error) {
+          notifier.addNotification(`Gagal memperbarui status: ${error.message}`, 'error');
+          throw error;
+      }
+      if (data) {
+          setState(prev => ({
+              ...prev,
+              employeeSubmissions: prev.employeeSubmissions.map(s => s.id === submissionId ? data[0] : s)
+          }));
+          notifier.addNotification('Status submisi berhasil diperbarui.', 'success');
+      }
+  };
+
 
   // --- CHAT HANDLER ---
   const handleEmployeeChatUpdate = (chats: Record<string, Chat>) => {
@@ -311,6 +420,19 @@ const App: React.FC = () => {
                 <Route path="/dossier" element={
                   <Dossier employees={state.employees} clients={state.clients} currentUser={state.currentUser} onUpdateEmployee={updateEmployee} />
                 } />
+                 <Route path="/data-update" element={
+                  <DataUpdate 
+                    settings={state.appSettings} 
+                    submissions={state.employeeSubmissions} 
+                    employees={state.employees}
+                    clients={state.clients}
+                    currentUser={state.currentUser}
+                    onUpdateSettings={handleUpdateSettings}
+                    onUpdateSubmissionStatus={handleUpdateSubmissionStatus}
+                    onUpdateEmployee={updateEmployee}
+                    onDeleteEmployee={deleteEmployee}
+                  />
+                } />
                 <Route path="/clients" element={
                   <ClientManagement clients={state.clients} employees={state.employees} onAddClient={addClient} onUpdateClient={updateClient} onDeleteClient={deleteClient} />
                 } />
@@ -338,6 +460,9 @@ const App: React.FC = () => {
                 documentRequests={state.documentRequests}
                 onRequestDocument={handleCreateDocumentRequest}
                 onUpdateEmployee={updateEmployee}
+                appSettings={state.appSettings}
+                employeeSubmissions={state.employeeSubmissions}
+                onCreateSubmission={handleCreateSubmission}
               />
             } />
             <Route path="*" element={<Landing />} />

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, MapPin, Key, X, ArrowLeft, ChevronRight, ShieldCheck } from 'lucide-react';
-import { Employee, Client, Payslip, DocumentRequest } from '../types';
+import { Search, MapPin, Key, X, ArrowLeft, ChevronRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Employee, Client, Payslip, DocumentRequest, AppSettings, EmployeeDataSubmission } from '../types';
 import { useNavigate } from 'react-router-dom';
 import EmployeePortal from './EmployeePortal';
 
@@ -62,6 +62,12 @@ const PasswordPromptModal: React.FC<{
     );
 };
 
+const maskNIK = (nik: string) => {
+    if (!nik || nik.length < 5) return nik;
+    const prefix = nik.substring(0, 5);
+    return `${prefix}${'*'.repeat(nik.length - 5)}`;
+};
+
 const PublicEmployeeCard: React.FC<{ 
   employee: Employee, 
   onView: () => void
@@ -73,7 +79,9 @@ const PublicEmployeeCard: React.FC<{
     </div>
     <div className="w-full">
       <h3 className="font-black text-lg text-slate-800 truncate tracking-tight">{employee.fullName}</h3>
-      <p className="text-xs font-black text-blue-600 uppercase tracking-widest">{employee.id}</p>
+      <p className="text-xs font-black text-blue-600 uppercase tracking-widest font-mono" title="NIK disamarkan demi keamanan">
+        {maskNIK(employee.id)}
+      </p>
       <div className="flex items-center justify-center space-x-1.5 mt-2 bg-slate-50 py-1 rounded-full">
           <MapPin className="w-3 h-3 text-slate-400" />
           <p className="text-[10px] font-bold text-slate-500 uppercase">{employee.branch}</p>
@@ -91,13 +99,17 @@ const PublicSearch: React.FC<{
   payslips: Payslip[];
   documentRequests: DocumentRequest[];
   onRequestDocument: (request: Omit<DocumentRequest, 'id' | 'requestTimestamp' | 'status'>) => Promise<void>;
-  onUpdateEmployee: (employee: Employee) => Promise<void>;
+  onUpdateEmployee: (employee: Partial<Employee>) => Promise<void>;
+  appSettings: AppSettings[];
+  employeeSubmissions: EmployeeDataSubmission[];
+  onCreateSubmission: (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => Promise<void>;
 }> = (props) => {
   const { employees, clients } = props;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClient, setFilterClient] = useState('all');
   const [filterBranch, setFilterBranch] = useState('all');
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState('');
   const [passwordPromptState, setPasswordPromptState] = useState<{ isOpen: boolean, targetEmployee: Employee | null, error: string }>({ isOpen: false, targetEmployee: null, error: '' });
   const [verifiedEmployee, setVerifiedEmployee] = useState<Employee | null>(null);
   const navigate = useNavigate();
@@ -105,7 +117,9 @@ const PublicSearch: React.FC<{
   const uniqueBranches = useMemo(() => Array.from(new Set(employees.map(e => e.branch))).sort(), [employees]);
 
   const filteredEmployees = useMemo(() => {
-    if (!hasSearched) return [];
+    // SECURITY FIX: Do not show results if no search term is provided, even if client filter is used
+    if (!hasSearched || searchTerm.trim().length < 3) return [];
+    
     return employees.filter(e => 
       (e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (filterClient === 'all' || e.clientId === filterClient) &&
@@ -113,9 +127,11 @@ const PublicSearch: React.FC<{
     ).sort((a, b) => a.fullName.localeCompare(b.fullName));
   }, [employees, searchTerm, filterClient, filterBranch, hasSearched]);
 
-  useEffect(() => { setHasSearched(false); }, [searchTerm, filterClient, filterBranch]);
+  useEffect(() => { 
+    setHasSearched(false); 
+    setSearchError('');
+  }, [searchTerm, filterClient, filterBranch]);
   
-  // Sync verified employee state with the main employee list from props
   useEffect(() => {
     if (verifiedEmployee) {
       const updatedEmployee = employees.find(e => e.id === verifiedEmployee.id);
@@ -127,7 +143,13 @@ const PublicSearch: React.FC<{
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setHasSearched(!!(searchTerm.trim() || filterClient !== 'all' || filterBranch !== 'all'));
+    if (searchTerm.trim().length < 3) {
+        setSearchError('Harap masukkan minimal 3 karakter Nama atau NIK untuk memulai pencarian demi alasan keamanan.');
+        setHasSearched(false);
+        return;
+    }
+    setSearchError('');
+    setHasSearched(true);
   };
 
   const handlePasswordSubmit = (nikInput: string) => {
@@ -164,27 +186,41 @@ const PublicSearch: React.FC<{
       
       <main className="p-4 md:p-10 max-w-6xl mx-auto flex-1 w-full">
         <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">Verifikasi Identitas</h1>
-            <p className="text-sm text-slate-500 font-medium">Temukan NIK Anda untuk mengakses fitur portal secara instan.</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">Akses Portal Mandiri</h1>
+            <p className="text-sm text-slate-500 font-medium">Cari data Anda secara spesifik untuk mulai mengelola administrasi kepegawaian.</p>
         </div>
         
         <form onSubmit={handleSearch} className="mb-10 bg-white p-5 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 space-y-4">
             <div className="space-y-3">
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                    <input type="text" placeholder="Cari Nama Lengkap / NIK..." className="w-full pl-12 pr-4 py-4 text-base bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    <input 
+                        type="text" 
+                        placeholder="Ketik Nama Lengkap atau NIK Anda..." 
+                        className={`w-full pl-12 pr-4 py-4 text-base bg-slate-50 border-2 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-bold ${searchError ? 'border-red-200' : 'border-transparent'}`} 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                    />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <select className="w-full px-4 py-4 text-xs font-black bg-slate-50 border-transparent rounded-2xl appearance-none focus:bg-white transition-all uppercase tracking-widest text-slate-600" value={filterClient} onChange={e => setFilterClient(e.target.value)}>
-                        <option value="all">Semua Klien</option>
+                        <option value="all">Filter Klien (Opsional)</option>
                         {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     <select className="w-full px-4 py-4 text-xs font-black bg-slate-50 border-transparent rounded-2xl appearance-none focus:bg-white transition-all uppercase tracking-widest text-slate-600" value={filterBranch} onChange={e => setFilterBranch(e.target.value)}>
-                        <option value="all">Semua Cabang</option>
+                        <option value="all">Filter Cabang (Opsional)</option>
                         {uniqueBranches.map(branch => (<option key={branch} value={branch}>{branch}</option>))}</select>
                 </div>
             </div>
-            <button type="submit" className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition shadow-xl active:scale-95">MULAI PENCARIAN</button>
+            
+            {searchError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-xs font-bold animate-pulse">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{searchError}</span>
+                </div>
+            )}
+
+            <button type="submit" className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition shadow-xl active:scale-95">MULAI PENCARIAN DATA</button>
         </form>
 
         {hasSearched && (
@@ -197,11 +233,17 @@ const PublicSearch: React.FC<{
                         <div className="bg-white p-6 rounded-full inline-block shadow-lg mb-4 border border-slate-100">
                             <Search className="w-10 h-10 text-slate-200"/>
                         </div>
-                        <h3 className="text-lg font-black text-slate-800">Tidak Ditemukan</h3>
-                        <p className="text-sm text-slate-400 font-medium">Pastikan penulisan nama atau NIK sudah benar.</p>
+                        <h3 className="text-lg font-black text-slate-800">Data Tidak Ditemukan</h3>
+                        <p className="text-sm text-slate-400 font-medium">Pastikan pencarian Anda spesifik (Nama Lengkap atau NIK yang tepat).</p>
                     </div>
                 )}
             </>
+        )}
+        
+        {!hasSearched && !searchError && (
+             <div className="text-center py-10 opacity-60">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Masukkan kata kunci untuk melihat hasil</p>
+             </div>
         )}
       </main>
 

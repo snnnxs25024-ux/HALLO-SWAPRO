@@ -30,6 +30,17 @@ import {
   GraduationCap,
   Calendar,
   FileX,
+  Clock, 
+  CheckCircle,
+  Mail,
+  Heart,
+  Home,
+  Users,
+  Flag,
+  BookOpen,
+  Award,
+  EyeOff,
+  MessageCircle,
 } from 'lucide-react';
 import { Employee, Client, EmployeeStatus, User, UserRole, Payslip, EDUCATION_LEVELS, ContractDocument } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -42,7 +53,7 @@ interface DatabaseProps {
   payslips: Payslip[];
   onDataChange: (employees: Partial<Employee>[]) => Promise<void>; // for bulk import
   onAddEmployee: (employee: Employee) => Promise<void>;
-  onUpdateEmployee: (employee: Employee) => Promise<void>;
+  onUpdateEmployee: (employee: Partial<Employee>) => Promise<void>;
   onDeleteEmployee: (employeeId: string) => Promise<void>;
   onResetEmployees: () => Promise<boolean>;
   currentUser: User;
@@ -92,6 +103,32 @@ const getFileNameFromUrl = (url?: string): string => {
     }
 };
 
+const calculateAge = (birthDate?: string): string => {
+    if (!birthDate) return '-';
+    try {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age > 0 ? `${age} tahun` : 'Invalid';
+    } catch (e) {
+        return '-';
+    }
+};
+
+const formatWhatsApp = (phone?: string) => {
+    if (!phone) return '#';
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+        cleaned = '62' + cleaned.substring(1);
+    }
+    return `https://wa.me/${cleaned}`;
+};
+
+
 const formatPeriod = (period: string) => {
     const [year, month] = period.split('-');
     return new Date(parseInt(year), parseInt(month) - 1).toLocaleString('id-ID', {
@@ -107,36 +144,94 @@ export const EmployeeCard: React.FC<{
   onView: () => void, 
   onEdit?: () => void, 
   onDelete?: () => void,
-  isViewOnly?: boolean 
-}> = ({ employee, clientName, onView, onEdit, onDelete, isViewOnly }) => (
-  <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300">
-    <div className="flex flex-col items-center text-center">
-      <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full flex-shrink-0 object-cover border-4 border-white shadow-md mb-4" />
-      <div className="w-full flex-1 min-w-0">
-        <h3 className="font-bold text-lg text-slate-800 truncate">{employee.fullName}</h3>
-        <p className="text-sm text-slate-400 font-mono">{employee.id}</p>
-        <div className="flex items-center justify-center space-x-1.5 mt-1">
-          <MapPin className="w-4 h-4 text-slate-400" />
-          <p className="text-sm text-slate-500 truncate">{employee.branch}</p>
+  isViewOnly?: boolean,
+  submissionStatus?: 'pending' | 'approved' | 'rejected' | 'not_submitted';
+}> = ({ employee, clientName, onView, onEdit, onDelete, isViewOnly, submissionStatus }) => {
+    
+    const cardBorderClass = useMemo(() => {
+        switch (submissionStatus) {
+            case 'pending':
+                return 'border-blue-500 border-2 shadow-blue-500/10';
+            case 'approved':
+                return 'border-emerald-500 border-2';
+            default:
+                return 'border-gray-200';
+        }
+    }, [submissionStatus]);
+    
+    return (
+        <div className={`bg-white rounded-2xl shadow-lg shadow-slate-200/50 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300 relative ${cardBorderClass}`}>
+            {submissionStatus === 'pending' && <Clock className="absolute top-4 right-4 text-blue-500 w-5 h-5" title="Menunggu Review"/>}
+            {submissionStatus === 'approved' && <CheckCircle className="absolute top-4 right-4 text-emerald-500 w-5 h-5" title="Sudah Disetujui"/>}
+            <div className="flex flex-col items-center text-center">
+              <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full flex-shrink-0 object-cover border-4 border-white shadow-md mb-4" />
+              <div className="w-full flex-1 min-w-0">
+                <h3 className="font-bold text-lg text-slate-800 truncate">{employee.fullName}</h3>
+                <p className="text-sm text-slate-400 font-mono">{employee.id}</p>
+                <div className="flex items-center justify-center space-x-1.5 mt-1">
+                  <MapPin className="w-4 h-4 text-slate-400" />
+                  <p className="text-sm text-slate-500 truncate">{employee.branch}</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+              <div className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {employee.status}
+              </div>
+              <div className="flex space-x-1 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <button onClick={onView} title="Lihat Detail" className="p-2 rounded-full hover:bg-blue-50 text-slate-400 hover:text-blue-600"><Eye className="w-5 h-5" /></button>
+                {!isViewOnly && onEdit && onDelete && (
+                  <>
+                    <button onClick={onEdit} title="Edit" className="p-2 rounded-full hover:bg-emerald-50 text-slate-400 hover:text-emerald-600"><Edit className="w-5 h-5" /></button>
+                    <button onClick={onDelete} title="Hapus" className="p-2 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button>
+                  </>
+                )}
+              </div>
+            </div>
         </div>
-      </div>
+    );
+};
+
+// NEW: Redesigned InfoField component
+const InfoField: React.FC<{ label: string; value: string | undefined | null; icon: React.ReactNode; className?: string; }> = ({ label, value, icon, className }) => (
+    <div className={`flex items-start space-x-4 p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 ${className}`}>
+        <div className="flex-shrink-0 text-blue-500 mt-0.5">{icon}</div>
+        <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+            <p className="text-sm font-bold text-slate-800 leading-none">{value || '-'}</p>
+        </div>
     </div>
-    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-      <div className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
-          {employee.status}
-      </div>
-      <div className="flex space-x-1 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <button onClick={onView} title="Lihat Detail" className="p-2 rounded-full hover:bg-blue-50 text-slate-400 hover:text-blue-600"><Eye className="w-5 h-5" /></button>
-        {!isViewOnly && onEdit && onDelete && (
-          <>
-            <button onClick={onEdit} title="Edit" className="p-2 rounded-full hover:bg-emerald-50 text-slate-400 hover:text-emerald-600"><Edit className="w-5 h-5" /></button>
-            <button onClick={onDelete} title="Hapus" className="p-2 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button>
-          </>
-        )}
-      </div>
-    </div>
-  </div>
 );
+
+// NEW: Redesigned MaskedField component
+const MaskedField: React.FC<{ label: string; value: string; icon: React.ReactNode }> = ({ label, value, icon }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    
+    const maskValue = (str: string) => {
+        if (!str || str.length < 8) return str;
+        return str.substring(0, 4) + '*'.repeat(Math.max(0, str.length - 8)) + str.slice(-4);
+    };
+
+    return (
+        <div className="flex items-start space-x-4 p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 relative group">
+            <div className="flex-shrink-0 text-blue-500 mt-0.5">{icon}</div>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                <p className="text-sm font-bold text-slate-800 break-all leading-none font-mono tracking-tight">
+                    {isVisible ? value : maskValue(value)}
+                </p>
+            </div>
+            <button 
+                onClick={() => setIsVisible(!isVisible)}
+                className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                title={isVisible ? "Sembunyikan" : "Tampilkan"}
+            >
+                {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+        </div>
+    );
+};
+
 
 const ProfilePhotoUpload: React.FC<{
     value?: string;
@@ -267,7 +362,7 @@ export const EmployeeModal: React.FC<{
     employeeData: Partial<Employee> | null,
     clients: Client[],
     payslips: Payslip[],
-    onSave: (employee: Employee) => Promise<void>,
+    onSave: (employee: Partial<Employee>) => Promise<void>,
     onEdit: () => void,
     onDelete: () => void,
     currentUser: User
@@ -296,20 +391,19 @@ export const EmployeeModal: React.FC<{
 
     React.useEffect(() => {
         const initialData = employeeData || {
-            gender: 'Laki-laki',
-            status: EmployeeStatus.ACTIVE,
-            lastEducation: 'SMA/SMK',
-            contractNumber: 1,
-            bankAccount: { number: '', holderName: '', bankName: '' },
-            bpjs: { ketenagakerjaan: '', kesehatan: '' },
-            documents: { contractHistory: [] }
+            gender: 'Laki-laki', status: EmployeeStatus.ACTIVE, lastEducation: 'SMA/SMK', contractNumber: 1,
+            bankAccount: {}, bpjs: {}, documents: { contractHistory: [] }, familyData: { childrenData: [] },
+            addressKtp: {}, addressDomicile: { isSameAsKtp: true }, educationDetails: {}, emergencyContact: {}
         };
-        if (!initialData.documents) {
-            initialData.documents = { contractHistory: [] };
-        } else if (!initialData.documents.contractHistory) {
-            initialData.documents.contractHistory = [];
-        }
-        setFormData(initialData);
+        // Ensure all nested objects exist to prevent errors
+        const requiredKeys: (keyof Employee)[] = ['bankAccount', 'bpjs', 'documents', 'familyData', 'addressKtp', 'addressDomicile', 'educationDetails', 'emergencyContact'];
+        requiredKeys.forEach(key => {
+            if (!initialData[key]) (initialData as any)[key] = {};
+        });
+        if (!initialData.documents!.contractHistory) initialData.documents!.contractHistory = [];
+        if (!initialData.familyData!.childrenData) initialData.familyData!.childrenData = [];
+
+        setFormData(JSON.parse(JSON.stringify(initialData))); // Deep copy
         setFilePayloads({});
         setActiveTab('profil');
         setSelectedPayslipYear(new Date().getFullYear());
@@ -331,16 +425,30 @@ export const EmployeeModal: React.FC<{
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
+
+        const updatedFormData = { ...formData };
+        
+        // Handle nested properties
         if (name.includes('.')) {
             const [parent, child] = name.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: { ...(prev as any)[parent], [child]: value }
-            }));
+            (updatedFormData as any)[parent] = {
+                ...(updatedFormData as any)[parent],
+                [child]: type === 'checkbox' ? checked : value,
+            };
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            (updatedFormData as any)[name] = type === 'checkbox' ? checked : value;
         }
+
+        // Conditional logic for GPA
+        if (name === 'lastEducation' && !['D3', 'S1', 'S2', 'S3'].includes(value)) {
+            if (updatedFormData.educationDetails) {
+                updatedFormData.educationDetails.gpa = '';
+            }
+        }
+        
+        setFormData(updatedFormData);
     };
     
     const handlePhotoChange = (file: File | null) => {
@@ -397,6 +505,23 @@ export const EmployeeModal: React.FC<{
          setFormData(prev => ({...prev, documents: {...prev.documents, contractHistory: updatedHistory}}));
          updateLatestEoc(updatedHistory);
     };
+    
+    const handleChildChange = (index: number, field: 'name' | 'birthDate', value: string) => {
+        const updatedChildren = [...(formData.familyData?.childrenData || [])];
+        if (!updatedChildren[index]) updatedChildren[index] = { name: '', birthDate: '' };
+        updatedChildren[index][field] = value;
+        setFormData(prev => ({ ...prev, familyData: { ...prev.familyData, childrenData: updatedChildren }}));
+    };
+
+    const addChild = () => {
+        const updatedChildren = [...(formData.familyData?.childrenData || []), { name: '', birthDate: '' }];
+        setFormData(prev => ({ ...prev, familyData: { ...prev.familyData, childrenData: updatedChildren }}));
+    };
+    
+    const removeChild = (index: number) => {
+        const updatedChildren = (formData.familyData?.childrenData || []).filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, familyData: { ...prev.familyData, childrenData: updatedChildren }}));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -422,7 +547,19 @@ export const EmployeeModal: React.FC<{
                 if (filePayloads[payloadKey]) {
                     const file = filePayloads[payloadKey]!;
                     const filePath = `documents/${employeeId}/${file.name}`;
-                    finalData.documents[docKey as keyof Employee['documents']] = await uploadFile('swapro_files', filePath, file);
+                    (finalData.documents as any)[docKey] = await uploadFile('swapro_files', filePath, file);
+                }
+            }
+            
+            // Handle new personal document uploads
+            const personalDocs = ['photoKtp', 'photoNpwp', 'photoKk'];
+            for (const docKey of personalDocs) {
+                if (filePayloads[docKey]) {
+                    const file = filePayloads[docKey]!;
+                    const filePath = `documents/${employeeId}/personal/${docKey}-${file.name}`;
+                    const url = await uploadFile('swapro_files', filePath, file);
+                    if (!finalData.documents) finalData.documents = {};
+                    (finalData.documents as any)[`${docKey}Url`] = url;
                 }
             }
 
@@ -439,7 +576,7 @@ export const EmployeeModal: React.FC<{
                 }
             }
             
-            await onSave(finalData as Employee);
+            await onSave(finalData as Partial<Employee>);
         } catch (error: any) {
             console.error("Failed to save employee:", error);
             if (error.message && error.message.toLowerCase().includes('bucket not found')) {
@@ -454,44 +591,42 @@ export const EmployeeModal: React.FC<{
     
     const title = mode === 'add' ? 'Tambah Karyawan' : (mode === 'edit' ? 'Edit Data' : 'Detail Data');
 
-    // --- RENDER FUNCTIONS FOR VIEW MODE ---
-    const renderInfoItem = (icon: React.ReactNode, label: string, value: any) => (
-        <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0 text-slate-400 mt-1">{icon}</div>
-            <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <p className="text-base font-semibold text-slate-800 break-words">{value || '-'}</p>
-            </div>
-        </div>
-    );
-    
     const renderDocumentLink = (label: string, url?: string) => (
         url ? (
-            <a href={url} download={getFileNameFromUrl(url)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
+            <a href={url} download={getFileNameFromUrl(url)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-slate-100 hover:bg-blue-50 rounded-lg transition-colors border border-slate-200">
                 <div className="flex items-center space-x-3 min-w-0">
                     <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span className="font-semibold text-sm text-slate-700 truncate">{getFileNameFromUrl(url)}</span>
+                    <span className="font-semibold text-sm text-slate-700 truncate">{label}</span>
                 </div>
                 <Download className="w-5 h-5 text-slate-400 ml-2" />
             </a>
         ) : (
-             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg opacity-60 border border-gray-100">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <span className="text-sm text-gray-500 italic">{label} belum tersedia</span>
+             <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg opacity-60 border border-slate-100">
+                <FileText className="w-5 h-5 text-slate-400" />
+                <span className="text-sm text-slate-500 italic">{label} belum tersedia</span>
             </div>
         )
     );
     
-    const DetailSection: React.FC<{ title: string; children: React.ReactNode; grid?: boolean }> = ({ title, children, grid = true }) => (
-      <div className="mb-8 last:mb-0">
-        <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase mb-4">{title}</h4>
-        <div className={grid ? "grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5" : "space-y-3"}>
+    const DetailSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+      <div className="mb-10 last:mb-0">
+        <h4 className="text-base font-black text-slate-800 mb-4 pb-2 border-b-2 border-slate-100 uppercase tracking-tight">{title}</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {children}
         </div>
       </div>
     );
-
-    const tabs = ['profil', 'pekerjaan', 'finansial', 'dokumen', 'slip gaji'];
+    
+    const tabs = [
+        { id: 'profil', label: 'Profil', icon: <UserIcon className="w-4 h-4" /> },
+        { id: 'alamat', label: 'Alamat', icon: <Home className="w-4 h-4" /> },
+        { id: 'keluarga', label: 'Keluarga', icon: <Heart className="w-4 h-4" /> },
+        { id: 'pendidikan', label: 'Pendidikan', icon: <GraduationCap className="w-4 h-4" /> },
+        { id: 'pekerjaan', label: 'Kerja', icon: <Briefcase className="w-4 h-4" /> },
+        { id: 'finansial', label: 'Bank', icon: <CreditCard className="w-4 h-4" /> },
+        { id: 'dokumen', label: 'Dokumen', icon: <FileText className="w-4 h-4" /> },
+        { id: 'slip gaji', label: 'Slip Gaji', icon: <Calendar className="w-4 h-4" /> }
+    ];
 
     if (isViewMode && employeeData) {
         const contractHistory = employeeData.documents?.contractHistory || [];
@@ -499,45 +634,40 @@ export const EmployeeModal: React.FC<{
 
         return (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 animate-fadeIn">
-                <div className="bg-white rounded-none md:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn">
+                <div className="bg-white rounded-none md:rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 animate-scaleIn overflow-hidden">
                     {/* Header */}
-                    <div className="p-5 pt-8 md:p-6 bg-slate-50 border-b border-gray-200 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 text-center md:text-left relative">
-                        <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:bg-gray-200"><X className="w-5 h-5" /></button>
-                        <div className="flex flex-1 min-w-0 flex-col md:flex-row items-center gap-4">
-                            {employeeData.profilePhotoUrl ? (
-                                <img
-                                    src={employeeData.profilePhotoUrl}
-                                    alt={employeeData.fullName || 'Foto Profil'}
-                                    className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md shrink-0"
-                                />
-                            ) : (
-                                <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center text-white font-black text-4xl shadow-md ring-4 ring-white shrink-0">
-                                    {employeeData.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                                </div>
-                            )}
-                            <div className="min-w-0">
-                                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate pr-2">{employeeData.fullName}</h2>
-                                <p className="text-sm md:text-base text-slate-500 font-mono">{employeeData.id}</p>
-                                <div className={`mt-2 inline-block text-xs font-bold uppercase px-2.5 py-1 rounded-full ${employeeData.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
-                                    {employeeData.status}
-                                </div>
+                    <header className="p-6 bg-slate-50/70 border-b border-slate-200/80 flex flex-col md:flex-row items-center gap-5 text-center md:text-left relative">
+                        <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:bg-slate-200 transition-colors"><X className="w-5 h-5" /></button>
+                        <img src={employeeData.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employeeData.fullName || ' ')}&background=E0E7FF&color=4F46E5`} alt={employeeData.fullName || 'Foto Profil'} className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-lg shrink-0" />
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{employeeData.fullName}</h2>
+                            <p className="text-base text-slate-500 font-mono mt-1">{employeeData.id}</p>
+                            <div className={`mt-3 inline-block text-xs font-bold uppercase px-3 py-1.5 rounded-full ${employeeData.status === EmployeeStatus.ACTIVE ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
+                                {employeeData.status}
                             </div>
                         </div>
-                        <div className="hidden md:flex items-center space-x-2 shrink-0">
-                            {isPicUser && (
-                              <>
+                        <div className="hidden md:flex items-center space-x-2 shrink-0 self-start">
+                            {isPicUser && (<>
                                 <button onClick={onEdit} className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4" /><span>Edit</span></button>
                                 <button onClick={onDelete} className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4" /><span>Hapus</span></button>
-                              </>
-                            )}
+                            </>)}
                         </div>
-                    </div>
+                    </header>
                     {/* Tabs */}
-                    <div className="px-4 border-b border-gray-200 bg-white">
-                        <nav className="-mb-px flex space-x-4 md:space-x-6 overflow-x-auto">
+                    <div className="px-4 bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b border-slate-100">
+                        <nav className="flex space-x-1 justify-center overflow-x-auto no-scrollbar py-2">
                             {tabs.map(tab => (
-                                <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 border-b-2 font-bold text-sm uppercase tracking-wider ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                                    {tab}
+                                <button 
+                                    key={tab.id} 
+                                    onClick={() => setActiveTab(tab.id)} 
+                                    className={`flex items-center space-x-2.5 py-2 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                        activeTab === tab.id 
+                                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/10' 
+                                        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    {tab.icon}
+                                    <span className="hidden sm:inline">{tab.label}</span>
                                 </button>
                             ))}
                         </nav>
@@ -545,129 +675,151 @@ export const EmployeeModal: React.FC<{
 
                     {/* Content */}
                     <div className="p-6 md:p-8 overflow-y-auto bg-white flex-1">
+                        {/* --- HUBUNGI KARYAWAN SECTION --- */}
+                        <div className="mb-10 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 text-center md:text-left">Aksi Cepat</h4>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <a 
+                                    href={formatWhatsApp(employeeData.whatsapp)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] text-white font-black rounded-xl hover:bg-[#20bd5a] transition-all shadow-lg shadow-green-500/20 active:scale-95"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                    <span>WhatsApp</span>
+                                </a>
+                                {employeeData.email && (
+                                    <a 
+                                        href={`mailto:${employeeData.email}`}
+                                        className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                                    >
+                                        <Mail className="w-5 h-5" />
+                                        <span>Email Pribadi</span>
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+
                         {activeTab === 'profil' && (
                             <DetailSection title="Data Pribadi">
-                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK KTP", employeeData.ktpId)}
-                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "NIK SWAPRO", employeeData.swaproId)}
-                                {renderInfoItem(<Phone className="w-4 h-4" />, "No. WhatsApp", employeeData.whatsapp)}
-                                {renderInfoItem(<UserIcon className="w-4 h-4" />, "Jenis Kelamin", employeeData.gender)}
-                                {renderInfoItem(<Cake className="w-4 h-4" />, "Tanggal Lahir", employeeData.birthDate ? new Date(employeeData.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-')}
-                                {renderInfoItem(<GraduationCap className="w-4 h-4" />, "Pendidikan Terakhir", employeeData.lastEducation)}
-                                {renderInfoItem(<CreditCard className="w-4 h-4" />, "NPWP", employeeData.npwp)}
+                                <MaskedField label="NIK KTP" value={employeeData.ktpId || ''} icon={<UserIcon className="w-4 h-4" />} />
+                                <InfoField label="NIK SWAPRO" value={employeeData.swaproId} icon={<UserIcon className="w-4 h-4" />} />
+                                <InfoField label="No. WhatsApp" value={employeeData.whatsapp} icon={<Phone className="w-4 h-4" />} />
+                                <InfoField label="Email Pribadi" value={employeeData.email} icon={<Mail className="w-4 h-4" />} />
+                                <InfoField label="Jenis Kelamin" value={employeeData.gender} icon={<Users className="w-4 h-4" />} />
+                                <InfoField label="Tempat Lahir" value={employeeData.birthPlace} icon={<MapPin className="w-4 h-4" />} />
+                                <InfoField label="Tanggal Lahir" value={employeeData.birthDate ? new Date(employeeData.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'} icon={<Cake className="w-4 h-4" />} />
+                                <InfoField label="Usia" value={calculateAge(employeeData.birthDate)} icon={<Calendar className="w-4 h-4" />} />
+                                <InfoField label="Status Pernikahan" value={employeeData.maritalStatus} icon={<Heart className="w-4 h-4" />} />
+                                <InfoField label="Kewarganegaraan" value={employeeData.nationality} icon={<Flag className="w-4 h-4" />} />
                             </DetailSection>
                         )}
-                        {activeTab === 'pekerjaan' && (
-                            <>
-                                <DetailSection title="Informasi Posisi">
-                                    {renderInfoItem(<Building className="w-4 h-4" />, "Klien", clientMap.get(employeeData.clientId || ''))}
-                                    {renderInfoItem(<Briefcase className="w-4 h-4" />, "Jabatan", employeeData.position)}
-                                    {renderInfoItem(<MapPin className="w-4 h-4" />, "Cabang", employeeData.branch)}
-                                </DetailSection>
-                                <DetailSection title="Status & Kontrak">
-                                    {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Join", employeeData.joinDate ? new Date(employeeData.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
-                                    {renderInfoItem(<Calendar className="w-4 h-4" />, "End of Contract", employeeData.endDate ? new Date(employeeData.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
-                                    {renderInfoItem(<Calendar className="w-4 h-4" />, "Tanggal Resign", employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-')}
-                                    {renderInfoItem(<FileText className="w-4 h-4" />, "Kontrak Ke", employeeData.contractNumber)}
-                                    <div className="md:col-span-2">
-                                      {renderInfoItem(<Shield className="w-4 h-4" />, "Catatan Surat Peringatan (SP)", employeeData.disciplinaryActions)}
+                        {activeTab === 'alamat' && (<>
+                            <DetailSection title="Alamat KTP">
+                                <InfoField className="md:col-span-2" label="Alamat" value={employeeData.addressKtp?.address} icon={<Home className="w-4 h-4" />} />
+                                <InfoField label="RT/RW" value={`${employeeData.addressKtp?.rt || '-'} / ${employeeData.addressKtp?.rw || '-'}`} icon={<Home className="w-4 h-4" />} />
+                                <InfoField label="Kel/Desa" value={employeeData.addressKtp?.village} icon={<Home className="w-4 h-4" />} />
+                                <InfoField label="Kecamatan" value={employeeData.addressKtp?.district} icon={<Home className="w-4 h-4" />} />
+                                <InfoField label="Kota/Kab" value={employeeData.addressKtp?.city} icon={<Home className="w-4 h-4" />} />
+                                <InfoField label="Provinsi" value={employeeData.addressKtp?.province} icon={<Home className="w-4 h-4" />} />
+                                <InfoField label="Kode Pos" value={employeeData.addressKtp?.postalCode} icon={<Home className="w-4 h-4" />} />
+                            </DetailSection>
+                            <DetailSection title="Alamat Domisili">
+                                {employeeData.addressDomicile?.isSameAsKtp ? <p className="md:col-span-2 text-slate-500 italic p-4 bg-slate-50 rounded-xl">Sama dengan alamat KTP.</p> : <>
+                                    <InfoField className="md:col-span-2" label="Alamat" value={employeeData.addressDomicile?.address} icon={<MapPin className="w-4 h-4" />} />
+                                    <InfoField label="RT/RW" value={`${employeeData.addressDomicile?.rt || '-'} / ${employeeData.addressDomicile?.rw || '-'}`} icon={<MapPin className="w-4 h-4" />} />
+                                    <InfoField label="Kel/Desa" value={employeeData.addressDomicile?.village} icon={<MapPin className="w-4 h-4" />} />
+                                    <InfoField label="Kecamatan" value={employeeData.addressDomicile?.district} icon={<MapPin className="w-4 h-4" />} />
+                                    <InfoField label="Kota/Kab" value={employeeData.addressDomicile?.city} icon={<MapPin className="w-4 h-4" />} />
+                                    <InfoField label="Provinsi" value={employeeData.addressDomicile?.province} icon={<MapPin className="w-4 h-4" />} />
+                                    <InfoField label="Kode Pos" value={employeeData.addressDomicile?.postalCode} icon={<MapPin className="w-4 h-4" />} />
+                                </>}
+                            </DetailSection>
+                        </>)}
+                        {activeTab === 'keluarga' && (<>
+                             <DetailSection title="Orang Tua & Kontak Darurat">
+                                <InfoField label="Nama Ibu Kandung" value={employeeData.familyData?.motherName} icon={<UserIcon className="w-4 h-4" />} />
+                                <InfoField label="Nama Ayah Kandung" value={employeeData.familyData?.fatherName} icon={<UserIcon className="w-4 h-4" />} />
+                                <InfoField label="Kontak Darurat" value={employeeData.emergencyContact?.name} icon={<UserIcon className="w-4 h-4" />} />
+                                <InfoField label="No. HP Darurat" value={employeeData.emergencyContact?.phone} icon={<Phone className="w-4 h-4" />} />
+                             </DetailSection>
+                             <div className="mt-10">
+                                <h4 className="text-base font-black text-slate-800 mb-4 pb-2 border-b-2 border-slate-100 uppercase tracking-tight">Data Anak</h4>
+                                <div className="space-y-3">
+                                {(employeeData.familyData?.childrenData && employeeData.familyData.childrenData.length > 0) ? employeeData.familyData.childrenData.map((child, i) =>
+                                    <InfoField key={i} label={`Anak Ke-${i+1}`} value={`${child.name} (Lahir: ${new Date(child.birthDate).toLocaleDateString('id-ID')})`} icon={<Users className="w-4 h-4"/>} />
+                                ) : <p className="text-slate-500 italic p-4 bg-slate-50 rounded-xl text-center">Belum ada data anak.</p>}
+                                </div>
+                             </div>
+                        </>)}
+                        {activeTab === 'pendidikan' && (
+                            <DetailSection title="Pendidikan Terakhir">
+                                <InfoField label="Tingkat" value={employeeData.lastEducation} icon={<GraduationCap className="w-4 h-4" />} />
+                                <InfoField label="Institusi" value={employeeData.educationDetails?.universityName} icon={<Building className="w-4 h-4" />} />
+                                <InfoField label="Jurusan" value={employeeData.educationDetails?.major} icon={<BookOpen className="w-4 h-4" />} />
+                                {['D3', 'S1', 'S2', 'S3'].includes(employeeData.lastEducation || '') && <InfoField label="IPK" value={employeeData.educationDetails?.gpa} icon={<Award className="w-4 h-4" />} />}
+                                <InfoField label="Tahun Masuk" value={employeeData.educationDetails?.entryYear} icon={<Calendar className="w-4 h-4" />} />
+                                <InfoField label="Tahun Lulus" value={employeeData.educationDetails?.graduationYear} icon={<Calendar className="w-4 h-4" />} />
+                            </DetailSection>
+                        )}
+                        {activeTab === 'pekerjaan' && (<>
+                            <DetailSection title="Informasi Posisi & Status">
+                                <InfoField label="Klien" value={clientMap.get(employeeData.clientId || '')} icon={<Building className="w-4 h-4" />} />
+                                <InfoField label="Jabatan" value={employeeData.position} icon={<Briefcase className="w-4 h-4" />} />
+                                <InfoField label="Cabang" value={employeeData.branch} icon={<MapPin className="w-4 h-4" />} />
+                                <InfoField label="Tanggal Join" value={employeeData.joinDate ? new Date(employeeData.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
+                                <InfoField label="End of Contract" value={employeeData.endDate ? new Date(employeeData.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
+                                <InfoField label="Tanggal Resign" value={employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
+                                <InfoField label="Kontrak Ke" value={String(employeeData.contractNumber)} icon={<FileText className="w-4 h-4" />} />
+                                <InfoField className="md:col-span-2" label="Catatan SP" value={employeeData.disciplinaryActions} icon={<Shield className="w-4 h-4" />} />
+                            </DetailSection>
+                        </>)}
+                         {activeTab === 'finansial' && (<>
+                            <DetailSection title="Rekening Bank & Pajak">
+                                <MaskedField label="NPWP" value={employeeData.npwp || ''} icon={<CreditCard className="w-4 h-4" />} />
+                                <InfoField label="Bank" value={employeeData.bankAccount?.bankName} icon={<Building className="w-4 h-4" />} />
+                                <MaskedField label="No. Rekening" value={employeeData.bankAccount?.number || ''} icon={<CreditCard className="w-4 h-4" />} />
+                                <InfoField label="Nama Pemilik Rekening" value={employeeData.bankAccount?.holderName} icon={<UserIcon className="w-4 h-4" />} />
+                            </DetailSection>
+                            <DetailSection title="Jaminan Sosial">
+                                <MaskedField label="BPJS Ketenagakerjaan" value={employeeData.bpjs?.ketenagakerjaan || ''} icon={<Shield className="w-4 h-4" />} />
+                                <MaskedField label="BPJS Kesehatan" value={employeeData.bpjs?.kesehatan || ''} icon={<Shield className="w-4 h-4" />} />
+                            </DetailSection>
+                        </>)}
+                        {activeTab === 'dokumen' && (<>
+                            <div className="space-y-8">
+                                <div>
+                                    <h4 className="text-base font-black text-slate-800 mb-4 pb-2 border-b-2 border-slate-100 uppercase tracking-tight">Dokumen Pribadi</h4>
+                                    <div className="space-y-3">{renderDocumentLink("Foto KTP", employeeData.documents?.photoKtpUrl)} {renderDocumentLink("Foto NPWP", employeeData.documents?.photoNpwpUrl)} {renderDocumentLink("Foto Kartu Keluarga (KK)", employeeData.documents?.photoKkUrl)}</div>
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-black text-slate-800 mb-4 pb-2 border-b-2 border-slate-100 uppercase tracking-tight">Riwayat Kontrak</h4>
+                                    <div className="space-y-3">
+                                    {contractHistory.length > 0 ? contractHistory.map(doc => (<a key={doc.id} href={doc.fileUrl} download={getFileNameFromUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-slate-100 hover:bg-blue-50 rounded-lg transition-colors border border-slate-200"><div className="flex items-center space-x-3 min-w-0"><FileText className="w-5 h-5 text-blue-600 shrink-0" /><div><p className="font-semibold text-sm text-slate-700 truncate">{doc.name}</p><p className="text-xs text-slate-500">{new Date(doc.startDate).toLocaleDateString('id-ID')} - {new Date(doc.endDate).toLocaleDateString('id-ID')}</p></div></div><Download className="w-5 h-5 text-slate-400 ml-2" /></a>)) : <p className="text-center text-sm text-slate-400 italic py-4">Belum ada riwayat kontrak.</p>}
                                     </div>
-                                </DetailSection>
-                            </>
-                        )}
-                         {activeTab === 'finansial' && (
-                             <>
-                                <DetailSection title="Rekening Bank">
-                                    {renderInfoItem(<CreditCard className="w-4 h-4" />, "Bank", employeeData.bankAccount?.bankName)}
-                                    {renderInfoItem(<CreditCard className="w-4 h-4" />, "No. Rekening", employeeData.bankAccount?.number)}
-                                    {renderInfoItem(<UserIcon className="w-4 h-4" />, "Nama Pemilik Rekening", employeeData.bankAccount?.holderName)}
-                                </DetailSection>
-                                <DetailSection title="Jaminan Sosial">
-                                    {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS Ketenagakerjaan", employeeData.bpjs?.ketenagakerjaan)}
-                                    {renderInfoItem(<Shield className="w-4 h-4" />, "BPJS Kesehatan", employeeData.bpjs?.kesehatan)}
-                                </DetailSection>
-                            </>
-                        )}
-                        {activeTab === 'dokumen' && (
-                            <>
-                              <DetailSection title="Dokumen Utama" grid={false}>
-                                  {renderDocumentLink("PKWT New Hire", employeeData.documents?.pkwtNewHire)}
-                                  {renderDocumentLink("Surat Peringatan (SP)", employeeData.documents?.spLetter)}
-                              </DetailSection>
-                              <DetailSection title="Riwayat Kontrak Perpanjangan" grid={false}>
-                                  {contractHistory.length > 0 ? contractHistory.map(doc => (
-                                      <a key={doc.id} href={doc.fileUrl} download={getFileNameFromUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200">
-                                          <div className="flex items-center space-x-3 min-w-0">
-                                              <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                                              <div>
-                                                <p className="font-semibold text-sm text-slate-700 truncate">{doc.name}</p>
-                                                <p className="text-xs text-slate-500">
-                                                    {new Date(doc.startDate).toLocaleDateString('id-ID')} - {new Date(doc.endDate).toLocaleDateString('id-ID')}
-                                                </p>
-                                              </div>
-                                          </div>
-                                          <Download className="w-5 h-5 text-slate-400 ml-2" />
-                                      </a>
-                                  )) : (
-                                      <p className="text-center text-base text-slate-400 italic py-4">Belum ada riwayat perpanjangan kontrak.</p>
-                                  )}
-                              </DetailSection>
-                            </>
-                        )}
-                        {activeTab === 'slip gaji' && (
-                           <div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="text-xs font-bold text-blue-700 bg-blue-50 py-2 px-3 rounded-lg tracking-wider uppercase">Histori Slip Gaji</h4>
-                                    <select value={selectedPayslipYear} onChange={e => setSelectedPayslipYear(Number(e.target.value))} className="font-semibold text-sm bg-slate-100 border-slate-200 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500">
-                                        {payslipYears.map(y => <option key={y} value={y}>{y}</option>)}
-                                    </select>
                                 </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                    {MONTH_NAMES.map((month, index) => {
-                                        const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`;
-                                        const payslipForMonth = employeePayslips.find(p => p.period === period);
-                                        
-                                        if (payslipForMonth) {
-                                            return (
-                                                <a key={month} href={payslipForMonth.fileUrl} download={`slipgaji-${employeeData.id}-${period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center text-center p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors group">
-                                                    <Download className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
-                                                    <span className="font-bold text-sm text-blue-700">{month}</span>
-                                                </a>
-                                            );
-                                        } else {
-                                            return (
-                                                <div key={month} className="flex flex-col items-center justify-center text-center p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-not-allowed opacity-60">
-                                                    <FileX className="w-5 h-5 text-slate-400 mb-1" />
-                                                    <span className="font-semibold text-sm text-slate-500">{month}</span>
-                                                </div>
-                                            );
-                                        }
-                                    })}
-                                </div>
-                                 {payslipsForSelectedYear.length === 0 && <p className="text-center text-base text-slate-400 italic py-8">Tidak ada data slip gaji untuk tahun {selectedPayslipYear}.</p>}
-                           </div>
-                        )}
+                            </div>
+                        </>)}
+                        {activeTab === 'slip gaji' && (<div>
+                           <div className="flex justify-between items-center mb-6"><h4 className="text-base font-black text-slate-800 uppercase tracking-tight">Histori Slip Gaji</h4><select value={selectedPayslipYear} onChange={e => setSelectedPayslipYear(Number(e.target.value))} className="font-semibold text-sm bg-slate-100 border-slate-200 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500">{payslipYears.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">{MONTH_NAMES.map((month, index) => {const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`; const payslipForMonth = employeePayslips.find(p => p.period === period); if (payslipForMonth) {return (<a key={month} href={payslipForMonth.fileUrl} download={`slipgaji-${employeeData.id}-${period}.pdf`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center text-center p-4 bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 rounded-xl transition-colors group"><Download className="w-6 h-6 text-blue-500 mb-2 group-hover:scale-110 transition-transform" /><span className="font-black text-sm text-blue-800">{month}</span></a>);} else {return (<div key={month} className="flex flex-col items-center justify-center text-center p-4 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-not-allowed opacity-70"><FileX className="w-6 h-6 text-slate-400 mb-2" /><span className="font-semibold text-sm text-slate-500">{month}</span></div>);}})}</div>
+                           {payslipsForSelectedYear.length === 0 && <p className="text-center text-base text-slate-400 italic py-8">Tidak ada data slip gaji untuk tahun {selectedPayslipYear}.</p>}
+                        </div>)}
                     </div>
-                     <div className="p-2 flex md:hidden items-center justify-around gap-2 bg-slate-100 border-t border-gray-200">
-                         {isPicUser && (
-                            <>
-                                <button onClick={onEdit} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4"/><span>Edit</span></button>
-                                <button onClick={onDelete} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4"/><span>Hapus</span></button>
-                            </>
-                         )}
-                     </div>
+                     <footer className="p-3 flex md:hidden items-center justify-around gap-2 bg-slate-100 border-t border-gray-200">
+                         {isPicUser && (<>
+                            <button onClick={onEdit} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-slate-700 hover:bg-gray-100 transition whitespace-nowrap"><Edit className="w-4 h-4"/><span>Edit</span></button>
+                            <button onClick={onDelete} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition whitespace-nowrap"><Trash2 className="w-4 h-4"/><span>Hapus</span></button>
+                         </>)}
+                     </footer>
                 </div>
-                 <style>{`
-                    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                    @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-                    .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
-                    .animate-scaleIn { animation: scaleIn 0.2s ease-out forwards; }
-                `}</style>
+                 <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } } .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; } .animate-scaleIn { animation: scaleIn 0.2s ease-out forwards; } .no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
             </div>
         );
     }
 
     const renderFormField = (label: string, name: string, value: any, options: any = {}) => (
-        <div>
+        <div className={options.className}>
             <label className="block text-sm font-bold text-slate-600 mb-1">{label}</label>
             {options.type === 'select' ? (
                 <select name={name} value={value || ''} onChange={handleChange} className="w-full text-base px-3 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm appearance-none">
@@ -684,114 +836,163 @@ export const EmployeeModal: React.FC<{
     // --- ADD/EDIT FORM ---
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4">
-          <form onSubmit={handleSubmit} className="bg-white rounded-none md:rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 overflow-hidden">
+          <form onSubmit={handleSubmit} className="bg-white rounded-none md:rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] border border-slate-200 overflow-hidden">
               <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
                 <h2 className="text-xl font-bold text-slate-900">{title}</h2>
                 <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-gray-200"><X className="w-5 h-5" /></button>
               </div>
-              <div className="p-5 md:p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 flex-1">
-                  {/* Column 1: Profile & Employment */}
-                  <div className="space-y-6">
-                      <ProfilePhotoUpload value={formData.profilePhotoUrl} onChange={handlePhotoChange} />
-                      
-                      <div>
-                          <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Profil Pribadi</h4>
-                          <div className="space-y-4">
-                              {renderFormField("Nama Lengkap", "fullName", formData.fullName)}
-                              <div className="grid grid-cols-2 gap-4">
-                                  {renderFormField("NIK Karyawan", "id", formData.id, {disabled: mode === 'edit'})}
-                                  {renderFormField("NIK SWAPRO", "swaproId", formData.swaproId)}
-                              </div>
-                              {renderFormField("NIK KTP", "ktpId", formData.ktpId)}
-                              {renderFormField("WhatsApp", "whatsapp", formData.whatsapp)}
-                               <div className="grid grid-cols-2 gap-4">
-                                  {renderFormField("Jenis Kelamin", "gender", formData.gender, {type: 'select', options: ['Laki-laki', 'Perempuan']})}
-                                  {renderFormField("Tanggal Lahir", "birthDate", formData.birthDate, {type: 'date'})}
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                 {renderFormField("Pendidikan Terakhir", "lastEducation", formData.lastEducation, {type: 'select', options: [{value: '', label: 'Pilih Pendidikan'}, ...EDUCATION_LEVELS.map(l => ({value: l, label: l}))]})}
-                                  {renderFormField("NPWP", "npwp", formData.npwp)}
-                              </div>
-                          </div>
+              <div className="p-5 md:p-8 overflow-y-auto flex-1 space-y-8">
+                  
+                  <ProfilePhotoUpload value={formData.profilePhotoUrl} onChange={handlePhotoChange} />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      {/* --- SECTIONS --- */}
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Profil Pribadi</h4>
+                        {renderFormField("Nama Lengkap", "fullName", formData.fullName)}
+                        <div className="grid grid-cols-2 gap-4">
+                          {renderFormField("NIK Karyawan", "id", formData.id, {disabled: mode === 'edit'})}
+                          {renderFormField("NIK SWAPRO", "swaproId", formData.swaproId)}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          {renderFormField("No. KTP", "ktpId", formData.ktpId)}
+                          {renderFormField("WhatsApp", "whatsapp", formData.whatsapp)}
+                        </div>
+                        {renderFormField("Email Pribadi", "email", formData.email, {type: "email"})}
+                        <div className="grid grid-cols-3 gap-4">
+                          {renderFormField("Tempat Lahir", "birthPlace", formData.birthPlace, { className: 'col-span-1' })}
+                          {renderFormField("Tanggal Lahir", "birthDate", formData.birthDate, { type: 'date', className: 'col-span-1' })}
+                          {renderFormField("Usia", "age", calculateAge(formData.birthDate), { disabled: true, className: 'col-span-1' })}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          {renderFormField("Jenis Kelamin", "gender", formData.gender, {type: 'select', options: ['Laki-laki', 'Perempuan']})}
+                          {renderFormField("Status Pernikahan", "maritalStatus", formData.maritalStatus, {type: 'select', options: [{value:'', label:'Pilih'},'Belum Menikah', 'Menikah', 'Cerai Hidup', 'Cerai Mati']})}
+                        </div>
+                        {renderFormField("Kewarganegaraan", "nationality", formData.nationality)}
                       </div>
-
-                      <div>
-                          <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Informasi Kerja</h4>
-                          <div className="space-y-4">
-                               <div className="grid grid-cols-2 gap-4">
-                                  {renderFormField("Klien", "clientId", formData.clientId, {type: 'select', options: [{value: '', label: 'Pilih Klien'}, ...clients.map(c => ({value: c.id, label: c.name}))]})}
-                                  {renderFormField("Jabatan", "position", formData.position)}
-                              </div>
-                              {renderFormField("Cabang", "branch", formData.branch)}
-                              <div className="grid grid-cols-2 gap-4">
-                                  {renderFormField("Tanggal Join", "joinDate", formData.joinDate, {type: 'date'})}
-                                  {renderFormField("End of Contract", "endDate", formData.endDate, {type: 'date'})}
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                  {renderFormField("Tanggal Resign", "resignDate", formData.resignDate, {type: 'date'})}
-                                  {renderFormField("Kontrak Ke", "contractNumber", formData.contractNumber, {type: 'number'})}
-                              </div>
-                              {renderFormField("Status", "status", formData.status, {type: 'select', options: Object.values(EmployeeStatus)})}
-                              {renderFormField("Catatan SP", "disciplinaryActions", formData.disciplinaryActions, {type: 'textarea'})}
-                          </div>
+                      
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Informasi Kerja</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            {renderFormField("Klien", "clientId", formData.clientId, {type: 'select', options: [{value: '', label: 'Pilih Klien'}, ...clients.map(c => ({value: c.id, label: c.name}))]})}
+                            {renderFormField("Jabatan", "position", formData.position)}
+                        </div>
+                        {renderFormField("Cabang", "branch", formData.branch)}
+                        <div className="grid grid-cols-2 gap-4">
+                            {renderFormField("Tanggal Join", "joinDate", formData.joinDate, {type: 'date'})}
+                            {renderFormField("End of Contract", "endDate", formData.endDate, {type: 'date'})}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {renderFormField("Tanggal Resign", "resignDate", formData.resignDate, {type: 'date'})}
+                            {renderFormField("Kontrak Ke", "contractNumber", formData.contractNumber, {type: 'number'})}
+                        </div>
+                        {renderFormField("Status", "status", formData.status, {type: 'select', options: Object.values(EmployeeStatus)})}
+                        {renderFormField("Catatan SP", "disciplinaryActions", formData.disciplinaryActions, {type: 'textarea'})}
                       </div>
                   </div>
 
-                  {/* Column 2: Financial & Documents */}
-                  <div className="space-y-6">
-                      <div>
-                          <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Finansial & BPJS</h4>
-                          <div className="space-y-4">
-                              {renderFormField("Nama Bank", "bankAccount.bankName", formData.bankAccount?.bankName)}
-                              {renderFormField("No. Rekening", "bankAccount.number", formData.bankAccount?.number)}
-                              {renderFormField("Nama di Rekening", "bankAccount.holderName", formData.bankAccount?.holderName)}
-                              {renderFormField("BPJS Ketenagakerjaan", "bpjs.ketenagakerjaan", formData.bpjs?.ketenagakerjaan)}
-                              {renderFormField("BPJS Kesehatan", "bpjs.kesehatan", formData.bpjs?.kesehatan)}
-                          </div>
+                  {/* --- ADDRESS SECTION --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      <div className="space-y-4">
+                          <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Alamat KTP</h4>
+                          {renderFormField("Alamat", "addressKtp.address", formData.addressKtp?.address, {type: 'textarea'})}
+                          <div className="grid grid-cols-2 gap-4">{renderFormField("RT", "addressKtp.rt", formData.addressKtp?.rt)} {renderFormField("RW", "addressKtp.rw", formData.addressKtp?.rw)}</div>
+                          {renderFormField("Kel/Desa", "addressKtp.village", formData.addressKtp?.village)}
+                          {renderFormField("Kecamatan", "addressKtp.district", formData.addressKtp?.district)}
+                          {renderFormField("Kota/Kab", "addressKtp.city", formData.addressKtp?.city)}
+                          {renderFormField("Provinsi", "addressKtp.province", formData.addressKtp?.province)}
+                          {renderFormField("Kode Pos", "addressKtp.postalCode", formData.addressKtp?.postalCode)}
                       </div>
-                      
-                      <div>
-                          <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Dokumen (Max 5MB)</h4>
-                          <div className="space-y-4">
-                              <FileUploadField label="PKWT New Hire" name="documents.pkwtNewHire" value={formData.documents?.pkwtNewHire} onChange={(name, file) => handleFileChange(name, file)} />
-                              <FileUploadField label="Surat SP" name="documents.spLetter" value={formData.documents?.spLetter} onChange={(name, file) => handleFileChange(name, file)} />
-                          </div>
+                      <div className="space-y-4">
+                          <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Alamat Domisili</h4>
+                          <div className="flex items-center gap-2"><input type="checkbox" id="isSameAsKtp" name="addressDomicile.isSameAsKtp" checked={formData.addressDomicile?.isSameAsKtp || false} onChange={handleChange} className="h-4 w-4"/> <label htmlFor="isSameAsKtp">Sama dengan alamat KTP</label></div>
+                          {!formData.addressDomicile?.isSameAsKtp && (<div className="space-y-4 animate-fadeIn">
+                            {renderFormField("Alamat", "addressDomicile.address", formData.addressDomicile?.address, {type: 'textarea'})}
+                            <div className="grid grid-cols-2 gap-4">{renderFormField("RT", "addressDomicile.rt", formData.addressDomicile?.rt)} {renderFormField("RW", "addressDomicile.rw", formData.addressDomicile?.rw)}</div>
+                            {renderFormField("Kel/Desa", "addressDomicile.village", formData.addressDomicile?.village)}
+                            {renderFormField("Kecamatan", "addressDomicile.district", formData.addressDomicile?.district)}
+                            {renderFormField("Kota/Kab", "addressDomicile.city", formData.addressDomicile?.city)}
+                            {renderFormField("Provinsi", "addressDomicile.province", formData.addressDomicile?.province)}
+                            {renderFormField("Kode Pos", "addressDomicile.postalCode", formData.addressDomicile?.postalCode)}
+                          </div>)}
                       </div>
-                      
-                      {/* --- NEW DYNAMIC CONTRACT HISTORY SECTION --- */}
-                      <div>
-                          <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Riwayat Kontrak Perpanjangan</h4>
-                          <div className="space-y-4">
-                              {(formData.documents?.contractHistory || []).map((doc, index) => (
-                                  <div key={doc.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 relative">
-                                      <button type="button" onClick={() => removeContractRow(doc.id)} className="absolute top-2 right-2 p-1 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded-full">
-                                          <Trash2 className="w-4 h-4" />
-                                      </button>
-                                      <input
-                                          type="text"
-                                          placeholder="Nama Kontrak (e.g., Perpanjangan K2)"
-                                          value={doc.name}
-                                          onChange={e => handleContractChange(doc.id, 'name', e.target.value)}
-                                          className="w-full text-sm font-semibold px-3 py-2 bg-white border border-gray-300 rounded-lg"
-                                      />
-                                      <div className="grid grid-cols-2 gap-3">
-                                          <div>
-                                              <label className="text-xs font-medium text-slate-500">Tgl Mulai</label>
-                                              <input type="date" value={doc.startDate} onChange={e => handleContractChange(doc.id, 'startDate', e.target.value)} className="w-full text-sm px-3 py-2 bg-white border border-gray-300 rounded-lg"/>
-                                          </div>
-                                          <div>
-                                              <label className="text-xs font-medium text-slate-500">Tgl Selesai</label>
-                                              <input type="date" value={doc.endDate} onChange={e => handleContractChange(doc.id, 'endDate', e.target.value)} className="w-full text-sm px-3 py-2 bg-white border border-gray-300 rounded-lg"/>
-                                          </div>
-                                      </div>
-                                      <FileUploadField label="File Kontrak" name={`contract-${doc.id}`} value={doc.fileUrl} onChange={(name, file) => handleContractFileChange(doc.id, file)} />
+                  </div>
+
+                  {/* --- FAMILY & EDUCATION SECTION --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-4">
+                        <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Keluarga & Kontak Darurat</h4>
+                        {renderFormField("Nama Ibu Kandung", "familyData.motherName", formData.familyData?.motherName)}
+                        {renderFormField("Nama Ayah Kandung", "familyData.fatherName", formData.familyData?.fatherName)}
+                        {renderFormField("Nama Kontak Darurat", "emergencyContact.name", formData.emergencyContact?.name)}
+                        <div className="grid grid-cols-2 gap-4">
+                            {renderFormField("Hubungan", "emergencyContact.relationship", formData.emergencyContact?.relationship)}
+                            {renderFormField("No. HP", "emergencyContact.phone", formData.emergencyContact?.phone)}
+                        </div>
+                        <div>
+                            <h5 className="font-semibold text-slate-700 mb-2">Data Anak</h5>
+                            {(formData.familyData?.childrenData || []).map((child, index) => (
+                                <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 mb-2 p-2 bg-slate-50 rounded-lg">
+                                    <input type="text" placeholder="Nama Anak" value={child.name} onChange={(e) => handleChildChange(index, 'name', e.target.value)} className="w-full text-sm p-2 border border-slate-200 rounded"/>
+                                    <input type="date" value={child.birthDate} onChange={(e) => handleChildChange(index, 'birthDate', e.target.value)} className="w-full text-sm p-2 border border-slate-200 rounded"/>
+                                    <button type="button" onClick={() => removeChild(index)} className="p-2 text-red-500 hover:bg-red-100 rounded"><Trash2 className="w-4 h-4"/></button>
+                                </div>
+                            ))}
+                            <button type="button" onClick={addChild} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2"><Plus className="w-4 h-4"/> Tambah Anak</button>
+                        </div>
+                    </div>
+                     <div className="space-y-4">
+                        <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Pendidikan Terakhir</h4>
+                        {renderFormField("Tingkat", "lastEducation", formData.lastEducation, {type: 'select', options: [{value: '', label: 'Pilih'}, ...EDUCATION_LEVELS.map(l => ({value: l, label: l}))]})}
+                        {renderFormField("Institusi", "educationDetails.universityName", formData.educationDetails?.universityName)}
+                        {renderFormField("Jurusan", "educationDetails.major", formData.educationDetails?.major)}
+                        <div className="grid grid-cols-2 gap-4">
+                            {renderFormField("Tahun Masuk", "educationDetails.entryYear", formData.educationDetails?.entryYear)}
+                            {renderFormField("Tahun Lulus", "educationDetails.graduationYear", formData.educationDetails?.graduationYear)}
+                        </div>
+                        {['D3', 'S1', 'S2', 'S3'].includes(formData.lastEducation || '') && (
+                            renderFormField("IPK", "educationDetails.gpa", formData.educationDetails?.gpa)
+                        )}
+                     </div>
+                  </div>
+
+                  {/* --- FINANCIAL & DOCUMENT SECTION --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      <div className="space-y-4">
+                          <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Finansial, Pajak, & BPJS</h4>
+                          {renderFormField("Nama Bank", "bankAccount.bankName", formData.bankAccount?.bankName)}
+                          {renderFormField("No. Rekening", "bankAccount.number", formData.bankAccount?.number)}
+                          {renderFormField("Nama di Rekening", "bankAccount.holderName", formData.bankAccount?.holderName)}
+                          {renderFormField("NPWP", "npwp", formData.npwp)}
+                          {renderFormField("BPJS Ketenagakerjaan", "bpjs.ketenagakerjaan", formData.bpjs?.ketenagakerjaan)}
+                          {renderFormField("BPJS Kesehatan", "bpjs.kesehatan", formData.bpjs?.kesehatan)}
+                      </div>
+                      <div className="space-y-4">
+                          <h4 className="font-bold text-blue-600 text-base border-b border-blue-100 pb-2">Dokumen Pribadi</h4>
+                          <FileUploadField label="Foto KTP" name="photoKtp" value={formData.documents?.photoKtpUrl} onChange={(name, file) => handleFileChange(name, file)} />
+                          <FileUploadField label="Foto NPWP" name="photoNpwp" value={formData.documents?.photoNpwpUrl} onChange={(name, file) => handleFileChange(name, file)} />
+                          <FileUploadField label="Foto Kartu Keluarga" name="photoKk" value={formData.documents?.photoKkUrl} onChange={(name, file) => handleFileChange(name, file)} />
+                      </div>
+                  </div>
+
+                   {/* --- DYNAMIC CONTRACT HISTORY SECTION --- */}
+                  <div>
+                      <h4 className="font-bold text-blue-600 text-base mb-3 border-b border-blue-100 pb-2">Riwayat Kontrak (Termasuk PKWT & SP)</h4>
+                      <div className="space-y-4">
+                          {(formData.documents?.contractHistory || []).map((doc) => (
+                              <div key={doc.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 relative">
+                                  <button type="button" onClick={() => removeContractRow(doc.id)} className="absolute top-2 right-2 p-1 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                                  <input type="text" placeholder="Nama Kontrak (e.g., Perpanjangan K2)" value={doc.name} onChange={e => handleContractChange(doc.id, 'name', e.target.value)} className="w-full text-sm font-semibold px-3 py-2 bg-white border border-gray-300 rounded-lg" />
+                                  <div className="grid grid-cols-2 gap-3">
+                                      <div><label className="text-xs font-medium text-slate-500">Tgl Mulai</label><input type="date" value={doc.startDate} onChange={e => handleContractChange(doc.id, 'startDate', e.target.value)} className="w-full text-sm px-3 py-2 bg-white border border-gray-300 rounded-lg"/></div>
+                                      <div><label className="text-xs font-medium text-slate-500">Tgl Selesai</label><input type="date" value={doc.endDate} onChange={e => handleContractChange(doc.id, 'endDate', e.target.value)} className="w-full text-sm px-3 py-2 bg-white border border-gray-300 rounded-lg"/></div>
                                   </div>
-                              ))}
-                               <button type="button" onClick={addContractRow} className="w-full flex items-center justify-center space-x-2 border-2 border-dashed border-slate-300 text-slate-500 font-semibold py-2.5 rounded-lg hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition-colors">
-                                  <Plus className="w-4 h-4" />
-                                  <span>Tambah Riwayat Kontrak</span>
-                              </button>
-                          </div>
+                                  <FileUploadField label="File Kontrak" name={`contract-${doc.id}`} value={doc.fileUrl} onChange={(name, file) => handleContractFileChange(doc.id, file)} />
+                              </div>
+                          ))}
+                           <button type="button" onClick={addContractRow} className="w-full flex items-center justify-center space-x-2 border-2 border-dashed border-slate-300 text-slate-500 font-semibold py-2.5 rounded-lg hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition-colors">
+                              <Plus className="w-4 h-4" /><span>Tambah Riwayat Dokumen</span>
+                          </button>
                       </div>
                   </div>
               </div>

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { 
   Users, 
@@ -11,6 +12,8 @@ import {
   GraduationCap,
   PieChart as PieChartIcon,
   ShieldCheck,
+  MessageCircle,
+  Mail,
 } from 'lucide-react';
 import { AppState, Employee, EmployeeStatus } from '../types';
 import { 
@@ -96,6 +99,15 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
 
   const activeEmployees = useMemo(() => employees.filter(e => e.status === EmployeeStatus.ACTIVE), [employees]);
   const pendingRequestsCount = useMemo(() => documentRequests.filter(r => r.status === 'PENDING').length, [documentRequests]);
+
+  const formatWhatsApp = (phone?: string) => {
+    if (!phone) return '#';
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+        cleaned = '62' + cleaned.substring(1);
+    }
+    return `https://wa.me/${cleaned}`;
+  };
 
   const statCardData = useMemo(() => {
     const now = new Date();
@@ -272,7 +284,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
                 <h3 className="text-xl font-bold text-slate-800 mb-4">Riwayat Terbaru</h3>
                 <div className="space-y-4">
                     {recentActivities.map(act => (
-                        <div key={act.id + act.type} className="flex items-center space-x-4">
+                        <div key={act.id + act.type} className="flex items-center space-x-4 group">
                             <div className={`p-2.5 rounded-lg shrink-0 ${act.type === 'join' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                                 {act.type === 'join' ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
                             </div>
@@ -282,6 +294,26 @@ const Dashboard: React.FC<DashboardProps> = ({ state }) => {
                                 <p className="text-sm text-slate-400 font-medium">
                                     {act.type === 'join' ? 'Baru Join' : 'Resign'} • {new Date(act.type === 'join' ? act.joinDate : act.resignDate!).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}
                                 </p>
+                            </div>
+                            <div className="flex space-x-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <a 
+                                    href={formatWhatsApp(act.whatsapp)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    title="Hubungi via WhatsApp"
+                                    className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                </a>
+                                {act.email && (
+                                    <a 
+                                        href={`mailto:${act.email}`} 
+                                        title="Kirim Email"
+                                        className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                    >
+                                        <Mail className="w-4 h-4" />
+                                    </a>
+                                )}
                             </div>
                         </div>
                     ))}

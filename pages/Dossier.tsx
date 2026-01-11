@@ -14,7 +14,7 @@ const DossierEmployeeCard: React.FC<{
 }> = ({ employee, clientName, onSelect }) => {
     const docCount = employee.documents?.contractHistory?.length || 0;
     const pendingDocsCount = employee.documents?.contractHistory?.filter(d => !d.isSigned).length || 0;
-    const hasSignature = !!employee.e_signature;
+    const hasSignature = !!employee.documents?.e_signature;
 
     return (
         <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-gray-200 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300 flex flex-col text-center relative">
@@ -178,7 +178,7 @@ const Dossier: React.FC<DossierProps> = ({ employees, clients, currentUser, onUp
                 } else if (filterDocStatus === 'lengkap') {
                     docStatusMatch = contractHistory.length > 0 && contractHistory.every(d => d.isSigned);
                 } else if (filterDocStatus === 'no-esign') {
-                    docStatusMatch = !e.e_signature;
+                    docStatusMatch = !e.documents?.e_signature;
                 }
             }
 
@@ -359,7 +359,7 @@ const UploadDocumentModal: React.FC<{
             const { error: uploadError } = await supabase.storage.from('swapro_files').upload(filePath, file);
             if(uploadError) throw uploadError;
 
-            const { data: { publicUrl } } = supabase.storage.from('swapro_files').getPublicUrl(filePath);
+            const { data: { publicUrl } } = await supabase.storage.from('swapro_files').getPublicUrl(filePath);
 
             const newContract: ContractDocument = {
                 id: docId,
@@ -453,14 +453,14 @@ const SigningModal: React.FC<{
     if (!isOpen) return null;
 
     const handleSign = async () => {
-       if (!employee.e_signature) {
+       if (!employee.documents?.e_signature) {
            notifier.addNotification("Karyawan belum memiliki E-Signature. Harap minta karyawan untuk membuatnya di portal mereka.", "error");
            return;
        }
        if (window.confirm("Apakah Anda yakin ingin menandatangani dokumen ini? Tindakan ini akan final.")) {
            const updatedDoc = { ...docToSign, isSigned: true, signedAt: new Date().toISOString(), picId: picUser.id };
            const updatedHistory = (employee.documents?.contractHistory || []).map(d => d.id === updatedDoc.id ? updatedDoc : d);
-           await onUpdateEmployee({ id: employee.id, documents: { ...employee.documents, contractHistory: updatedHistory } });
+           await onUpdateEmployee({ id: employee.id, documents: { ...(employee.documents || {}), contractHistory: updatedHistory } });
            notifier.addNotification("Dokumen berhasil ditandatangani.", "success");
            onClose();
        }
@@ -485,8 +485,8 @@ const SigningModal: React.FC<{
                         <div className="p-3 bg-white rounded-lg border border-slate-200">
                            <p className="text-xs font-semibold text-slate-400">Karyawan</p>
                            <p className="font-bold text-slate-800">{employee.fullName}</p>
-                           {employee.e_signature ? (
-                            <img src={employee.e_signature} alt="Tanda Tangan Karyawan" className="h-16 mt-2 bg-slate-100 p-1 rounded" />
+                           {employee.documents?.e_signature ? (
+                            <img src={employee.documents.e_signature} alt="Tanda Tangan Karyawan" className="h-16 mt-2 bg-slate-100 p-1 rounded" />
                            ) : (
                             <p className="text-xs text-red-500 font-semibold mt-1">Belum ada tanda tangan</p>
                            )}
