@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -31,6 +32,11 @@ import {
   User,
   Link,
   X,
+  MessageCircle,
+  Plus,
+  MoreVertical,
+  Instagram,
+  Share2
 } from 'lucide-react';
 import Marquee from '../components/Marquee';
 
@@ -50,7 +56,7 @@ const EDUCATION_CONTENT: Record<string, ModalContent> = {
     growth: {
         icon: <Brain className="w-6 h-6" />, title: 'Growth Mindset', color: 'rose',
         description: [
-            "Growth Mindset adalah keyakinan bahwa kemampuan dan kecerdasan dapat dikembangkan melalui dedikasi dan kerja keras. Kegagalan tidak dilihat sebagai akhir, melainkan sebagai kesempatan belajar.",
+            "Growth Mindset adalah keyaikinan bahwa kemampuan dan kecerdasan dapat dikembangkan melalui dedikasi dan kerja keras. Kegagalan tidak dilihat sebagai akhir, melainkan sebagai kesempatan belajar.",
             "Individu dengan mindset ini lebih tangguh, lebih termotivasi, dan cenderung mencapai kesuksesan yang lebih besar dalam jangka panjang karena mereka terus-menerus mencari cara untuk memperbaiki diri."
         ],
     },
@@ -264,81 +270,87 @@ const InfoModal: React.FC<{ content: ModalContent; onClose: () => void; }> = ({ 
   );
 };
 
-// --- Tombol Media Sosial Mengambang ---
-const FloatingSocialButtons: React.FC = () => {
+// --- IMPLEMENTASI BARU: Expandable FAB Menu (Fixed UI) ---
+const ExpandableSocialFAB: React.FC = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const socialLinks = [
         {
-            name: 'Instagram',
-            url: 'https://www.instagram.com/swaprokarir?igsh=MXdvOW56ZjN6ZXJrMA==',
-            icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-            ),
-            bgClass: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
-            shadowClass: 'shadow-pink-500/30'
+            name: 'WhatsApp',
+            url: 'https://wa.me/6285890285218',
+            label: 'Hubungi Kami',
+            icon: <MessageCircle className="w-5 h-5" />,
+            bg: 'bg-[#25D366]',
+            shadow: 'shadow-green-500/20'
         },
         {
             name: 'TikTok',
             url: 'https://www.tiktok.com/@swaprointernational_?_r=1&_t=ZS-91vBGI75XfE',
+            label: 'TikTok Resmi',
             icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 30 30" fill="currentColor" className="w-7 h-7">
-                    <path d="M24,4H6C4.895,4,4,4.895,4,6v18c0,1.105,0.895,2,2,2h18c1.105,0,2-0.895,2-2V6C26,4.895,25.104,4,24,4z M22.689,13.474 c-0.13,0.012-0.261,0.02-0.393,0.02c-1.495,0-2.809-0.768-3.574-1.931c0,3.049,0,6.519,0,6.577c0,2.685-2.177,4.861-4.861,4.861 C11.177,23,9,20.823,9,18.139c0-2.685,2.177-4.861,4.861-4.861c0.102,0,0.201,0.009,0.3,0.015v2.396c-0.1-0.012-0.197-0.03-0.3-0.03 c-1.37,0-2.481,1.111-2.481,2.481s1.11,2.481,2.481,2.481c1.371,0,2.581-1.08,2.581-2.45c0-0.055,0.024-11.17,0.024-11.17h2.289 c0.215,2.047,1.868,3.663,3.934,3.811V13.474z"></path>
-                 </svg>
-            ),
-            bgClass: 'bg-black',
-            shadowClass: 'shadow-slate-500/30'
-        },
-        {
-            name: 'WhatsApp',
-            url: 'https://wa.me/6285890285218',
-            icon: (
-                 <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    className="w-7 h-7"
-                    fill="currentColor"
-                >
-                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22C13.66,22 15.25,21.5 16.63,20.67L22,22L20.67,16.63C21.5,15.25 22,13.66 22,12A10,10 0 0,0 12,2M16.75,13.96C17,14.26 17,14.86 16.8,15.46C16.6,16.06 15.9,16.56 15.3,16.56C14.8,16.56 12.7,16.06 11.2,14.56C9.3,12.66 8.1,10.26 8,9.86C7.9,9.46 8.5,8.86 8.7,8.66C8.9,8.46 9.1,8.26 9.3,8.26C9.5,8.26 9.7,8.26 9.8,8.46C10,8.66 10.4,9.36 10.5,9.56C10.6,9.76 10.6,9.96 10.5,10.06C10.4,10.16 10.3,10.26 10.2,10.36C10.1,10.46 9.9,10.66 9.8,10.76C9.7,10.86 9.6,10.96 9.7,11.16C9.8,11.36 10.3,12.16 11.1,12.86C12.1,13.76 12.8,14.06 13,14.16C13.2,14.26 13.3,14.26 13.4,14.06C13.5,13.86 13.7,13.66 13.8,13.46C14,13.26 14.2,13.16 14.4,13.16C14.6,13.16 15.5,13.56 15.8,13.66C16.1,13.76 16.5,13.86 16.75,13.96Z" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.83.12V9.5a6.33 6.33 0 0 0-1.25-.12 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.47a8.27 8.27 0 0 0 5.43 1.94V7a4.83 4.83 0 0 1-1.39-.31Z"/>
                 </svg>
             ),
-            bgClass: 'bg-[#25D366] hover:bg-green-600',
-            shadowClass: 'shadow-green-500/30'
+            bg: 'bg-slate-900',
+            shadow: 'shadow-slate-500/20'
+        },
+        {
+            name: 'Instagram',
+            url: 'https://www.instagram.com/swaprokarir?igsh=MXdvOW56ZjN6ZXJrMA==',
+            label: 'Instagram Karir',
+            icon: <Instagram className="w-5 h-5" />,
+            bg: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
+            shadow: 'shadow-pink-500/20'
         }
     ];
 
     return (
-        <>
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center space-y-3">
+        <div ref={containerRef} className="fixed bottom-8 right-6 z-[100] flex flex-col items-end">
+            {/* Options Menu */}
+            <div className={`flex flex-col items-end space-y-3 mb-4 transition-all duration-500 ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
                 {socialLinks.map((link, index) => (
-                    <a
-                        key={link.name}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Kunjungi ${link.name} kami`}
-                        className={`text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 animate-slide-in ${link.bgClass} ${link.shadowClass}`}
-                        style={{ animationDelay: `${150 * index}ms` }}
-                    >
-                       {link.icon}
-                    </a>
+                    <div key={link.name} className="flex items-center gap-3 group">
+                        <span className="bg-white/80 backdrop-blur-md text-slate-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-slate-100">
+                            {link.label}
+                        </span>
+                        <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-xl hover:scale-110 active:scale-95 transition-all duration-300 ${link.bg} ${link.shadow}`}
+                            style={{ transitionDelay: `${index * 50}ms` }}
+                        >
+                            {link.icon}
+                        </a>
+                    </div>
                 ))}
             </div>
-            <style>{`
-                @keyframes slideInFromBottom {
-                    from {
-                        opacity: 0;
-                        transform: translateY(25px) scale(0.9);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-                .animate-slide-in {
-                    opacity: 0;
-                    animation: slideInFromBottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-                }
-            `}</style>
-        </>
+
+            {/* Main Toggle Button: Smaller and using App Icon */}
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 active:scale-90 border-4 border-white ${isOpen ? 'bg-slate-800 rotate-90' : 'bg-white shadow-blue-500/10'}`}
+                aria-label="Buka menu media sosial"
+            >
+                {isOpen ? (
+                    <X className="w-6 h-6 text-white" />
+                ) : (
+                    <img src="https://i.imgur.com/Lf2IC1Z.png" alt="SWA" className="w-8 h-8 object-contain" />
+                )}
+            </button>
+        </div>
     );
 };
 
@@ -355,7 +367,10 @@ const Landing: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDFEFE] font-['Inter'] selection:bg-blue-100 selection:text-blue-700">
       {modalContent && <InfoModal content={modalContent} onClose={() => setModalContent(null)} />}
-      <FloatingSocialButtons />
+      
+      {/* Tombol Media Sosial Mengambang (Expandable FAB) */}
+      <ExpandableSocialFAB />
+
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/70 backdrop-blur-md border-b border-slate-100 z-50">
         <div className="max-w-7xl mx-auto px-6">

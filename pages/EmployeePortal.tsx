@@ -61,7 +61,6 @@ const InfoField: React.FC<{ label: string; value: string | undefined | null; ico
     </div>
 );
 
-
 const SignatureModal: React.FC<{ onSave: (data: string) => void; onClose: () => void }> = ({ onSave, onClose }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
@@ -334,56 +333,60 @@ const EmployeeProfileView: React.FC<{
     }
 
     return (
-        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 border border-slate-200 overflow-hidden flex flex-col min-h-[70vh]">
+        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-200 overflow-hidden flex flex-col min-h-[70vh] animate-slideIn">
             {showSignature && <SignatureModal onSave={handleSaveSignature} onClose={() => setShowSignature(false)} />}
             
-            <div className="p-8 md:p-12 bg-slate-50/50 border-b border-slate-100 text-center relative">
-                <div className="absolute top-6 left-6 md:top-10 md:left-10">
-                    <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+            <div className="p-10 md:p-14 bg-slate-50/50 border-b border-slate-100 text-center relative">
+                <div className="absolute top-8 left-8">
+                    <div className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border shadow-sm ${employee.status === EmployeeStatus.ACTIVE ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                         {employee.status}
                     </div>
                 </div>
-                <div className="relative inline-block">
+                <div className="relative inline-block group">
                     <img 
                         src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} 
                         alt={employee.fullName} 
-                        className="w-32 h-32 rounded-full object-cover mx-auto ring-8 ring-white shadow-2xl"
+                        className="w-36 h-36 rounded-full object-cover mx-auto ring-8 ring-white shadow-2xl transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute bottom-1 right-1 bg-blue-600 p-2 rounded-full border-4 border-white shadow-lg text-white">
-                        <Shield className="w-4 h-4" />
+                    <div className="absolute bottom-1 right-2 bg-blue-600 p-2.5 rounded-full border-4 border-white shadow-lg text-white">
+                        <Shield className="w-5 h-5" />
                     </div>
                 </div>
-                <h2 className="mt-6 text-3xl font-black text-slate-900 tracking-tight leading-none">{employee.fullName}</h2>
-                <div className="mt-3 flex items-center justify-center space-x-2 text-slate-400 font-mono text-sm font-bold">
+                <h2 className="mt-8 text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none">{employee.fullName}</h2>
+                <div className="mt-4 flex items-center justify-center space-x-3 text-slate-400 font-mono text-sm font-bold bg-white/50 w-fit mx-auto px-4 py-1.5 rounded-full border border-slate-100">
                     <span>{employee.id}</span>
                     <span className="opacity-30">/</span>
-                    <span>{employee.swaproId}</span>
+                    <span className="text-blue-500">{employee.swaproId}</span>
                 </div>
             </div>
 
-            {/* TAB NAVIGATION FIXED: Removed justify-center and improved spacing for horizontal scroll */}
+            {/* TAB NAVIGATION: Fixed clipping and unprofessional layout on small screens */}
             <div className="bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 shadow-sm overflow-hidden">
-                <nav className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-4 px-6">
-                    {portalTabs.map(tab => (
-                        <button 
-                            key={tab.id} 
-                            onClick={() => setActiveTab(tab.id)} 
-                            className={`flex items-center space-x-2.5 py-2.5 px-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all duration-300 shrink-0 ${
-                                activeTab === tab.id 
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 translate-y-[-1px]' 
-                                : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-                            }`}
-                        >
-                            {tab.icon}
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
-                    {/* Extra padding at end for mobile scroll */}
-                    <div className="w-6 shrink-0 md:hidden"></div>
-                </nav>
+                <div className="max-w-full px-4 sm:px-6">
+                    <nav className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-4 scroll-smooth">
+                        {/* Hidden spacer to ensure first item isn't clipped by rounding or parent container */}
+                        <div className="w-1 shrink-0"></div>
+                        {portalTabs.map(tab => (
+                            <button 
+                                key={tab.id} 
+                                onClick={() => setActiveTab(tab.id)} 
+                                className={`flex items-center space-x-2.5 py-3 px-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.1em] transition-all duration-300 shrink-0 ${
+                                    activeTab === tab.id 
+                                    ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20 -translate-y-0.5' 
+                                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                {tab.icon}
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                        {/* Extra space at end for better mobile UX */}
+                        <div className="w-10 shrink-0"></div>
+                    </nav>
+                </div>
             </div>
 
-            <div className="p-6 md:p-12 flex-1 bg-white">
+            <div className="p-8 md:p-14 flex-1 bg-white">
                 {activeTab === 'profil' && (
                     <DetailSection title="Identitas Pribadi">
                         <MaskedField label="NIK Identitas (KTP)" value={employee.ktpId} icon={<UserIcon className="w-4 h-4" />} />
@@ -411,7 +414,7 @@ const EmployeeProfileView: React.FC<{
                         </DetailSection>
                         <DetailSection title="Alamat Domisili Saat Ini">
                             {employee.addressDomicile?.isSameAsKtp ? (
-                                <div className="md:col-span-2 p-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200 text-center">
+                                <div className="md:col-span-2 p-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 text-center">
                                     <p className="text-sm text-slate-400 font-bold uppercase tracking-widest italic">Sama dengan alamat KTP</p>
                                 </div>
                             ) : (
@@ -445,16 +448,16 @@ const EmployeeProfileView: React.FC<{
                         <DetailSection title="Daftar Anggota Keluarga (Anak)" grid={false}>
                             {(employee.familyData?.childrenData && employee.familyData.childrenData.length > 0) ? (
                                 employee.familyData.childrenData.map((child, index) => (
-                                    <div key={index} className="flex items-center space-x-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-200">
-                                        <div className="p-3 bg-white text-blue-600 rounded-xl shadow-sm border border-slate-100"><UserIcon className="w-5 h-5" /></div>
+                                    <div key={index} className="flex items-center space-x-5 p-6 bg-slate-50/50 rounded-2xl border border-slate-200 hover:bg-white transition-colors group">
+                                        <div className="p-4 bg-white text-blue-600 rounded-xl shadow-sm border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-all"><UserIcon className="w-6 h-6" /></div>
                                         <div className="flex-1">
-                                            <p className="font-black text-slate-800 uppercase text-xs tracking-tight">{child.name}</p>
-                                            <p className="text-xs text-slate-400 font-bold mt-1">Lahir: {child.birthDate ? new Date(child.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'}</p>
+                                            <p className="font-black text-slate-800 uppercase text-sm tracking-tight">{child.name}</p>
+                                            <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Lahir: {child.birthDate ? new Date(child.birthDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year: 'numeric'}) : '-'}</p>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="p-10 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 text-center">
+                                <div className="p-14 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200 text-center">
                                     <p className="text-sm text-slate-400 font-bold uppercase tracking-widest italic">Belum ada data anak terdaftar</p>
                                 </div>
                             )}
@@ -509,29 +512,29 @@ const EmployeeProfileView: React.FC<{
                 {activeTab === 'dokumen' && (
                     <div className="space-y-12">
                         <DetailSection title="Legalitas: Tanda Tangan Digital" grid={false}>
-                            <div className="p-8 bg-blue-50/50 rounded-[2rem] border border-blue-100 text-center shadow-inner">
+                            <div className="p-10 bg-blue-50/50 rounded-[2.5rem] border border-blue-100 text-center shadow-inner">
                                 {signatureData ? (
-                                    <div className="space-y-4">
-                                        <div className="inline-block p-6 bg-white rounded-3xl shadow-xl border border-white">
-                                            <img src={signatureData} alt="Signature" className="h-28 mx-auto" />
+                                    <div className="space-y-6">
+                                        <div className="inline-block p-8 bg-white rounded-3xl shadow-xl border border-white transition-transform hover:scale-105 duration-500">
+                                            <img src={signatureData} alt="Signature" className="h-32 mx-auto" />
                                         </div>
                                         <div>
                                             <p className="text-xs font-black text-blue-600 uppercase tracking-widest">E-Signature Terverifikasi</p>
-                                            <button onClick={() => setShowSignature(true)} className="mt-2 text-[10px] font-black text-slate-400 hover:text-blue-600 underline uppercase tracking-widest transition-colors">Perbarui Tanda Tangan</button>
+                                            <button onClick={() => setShowSignature(true)} className="mt-3 text-[10px] font-black text-slate-400 hover:text-blue-600 underline uppercase tracking-widest transition-colors">Perbarui Tanda Tangan</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-6 py-4">
-                                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto text-blue-600 shadow-xl border-4 border-blue-50">
-                                            <PenTool className="w-10 h-10" />
+                                    <div className="space-y-8 py-6">
+                                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto text-blue-600 shadow-xl border-4 border-blue-50">
+                                            <PenTool className="w-12 h-12" />
                                         </div>
                                         <div>
-                                            <h4 className="text-lg font-black text-slate-800">Aktifkan E-Signature</h4>
-                                            <p className="text-sm text-slate-500 font-medium mt-1 max-w-xs mx-auto">Tanda tangan digital diperlukan untuk mempercepat proses administrasi kontrak Anda.</p>
+                                            <h4 className="text-xl font-black text-slate-800">Aktifkan E-Signature</h4>
+                                            <p className="text-base text-slate-500 font-medium mt-2 max-w-sm mx-auto">Tanda tangan digital diperlukan untuk memproses administrasi kontrak Anda secara instan dan aman.</p>
                                         </div>
                                         <button 
                                             onClick={() => setShowSignature(true)}
-                                            className="px-10 py-4 bg-blue-600 text-white font-black text-xs rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all uppercase tracking-widest"
+                                            className="px-12 py-5 bg-blue-600 text-white font-black text-xs rounded-2xl shadow-2xl shadow-blue-600/30 active:scale-95 transition-all uppercase tracking-[0.2em]"
                                         >
                                             Buat Sekarang
                                         </button>
@@ -545,22 +548,22 @@ const EmployeeProfileView: React.FC<{
                                 {type: DocumentType.PKWT_NEW, url: employee.documents?.pkwtNewHire, name: "PKWT New Hire"}, 
                                 {type: DocumentType.SP_LETTER, url: employee.documents?.spLetter, name: "Surat Peringatan (SP)"}
                             ].map(doc => (
-                                <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100 transition-all hover:bg-white hover:shadow-lg" key={doc.type}>
-                                    <div className="flex items-center space-x-5 flex-1 min-w-0">
-                                        <div className="p-4 bg-white text-blue-600 rounded-2xl shadow-sm border border-slate-50"><FileText className="w-7 h-7" /></div>
+                                <div className="flex flex-col md:flex-row md:items-center space-y-5 md:space-y-0 p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 transition-all hover:bg-white hover:shadow-2xl hover:border-blue-200" key={doc.type}>
+                                    <div className="flex items-center space-x-6 flex-1 min-w-0">
+                                        <div className="p-5 bg-white text-blue-600 rounded-2xl shadow-sm border border-slate-50"><FileText className="w-8 h-8 shrink-0" /></div>
                                         <div className="min-w-0">
-                                            <span className="font-black text-base text-slate-800 uppercase tracking-tight block truncate">{doc.name}</span>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Official Document</p>
+                                            <span className="font-black text-lg text-slate-800 uppercase tracking-tight block truncate">{doc.name}</span>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1.5">Official Employment Record</p>
                                         </div>
                                     </div>
-                                    <div className="md:ml-4">
+                                    <div className="md:ml-6">
                                         <DocumentActionButton employeeId={employee.id} documentType={doc.type} documentIdentifier={doc.type} documentName={doc.name} fileUrl={doc.url} requests={documentRequests} onRequest={onRequestDocument} fullWidth={true} />
                                     </div>
                                 </div>
                             ))}
                         </DetailSection>
                          <DetailSection title="Berkas Identitas" grid={false}>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 {renderDocumentLink("Foto KTP Asli", employee.documents?.photoKtpUrl)}
                                 {renderDocumentLink("Foto Kartu NPWP", employee.documents?.photoNpwpUrl)}
                                 {renderDocumentLink("Foto Kartu Keluarga", employee.documents?.photoKkUrl)}
@@ -571,13 +574,13 @@ const EmployeeProfileView: React.FC<{
 
                 {activeTab === 'slip gaji' && (
                     <DetailSection title={`Rekapitulasi Slip Gaji ${selectedPayslipYear}`} grid={false}>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                             {MONTH_NAMES.map((month, index) => { 
                                 const period = `${selectedPayslipYear}-${(index + 1).toString().padStart(2, '0')}`; 
                                 const payslipForMonth = employeePayslips.find(p => p.period === period);
                                 return (
-                                    <div key={month} className={`p-5 rounded-[2rem] border-2 transition-all flex flex-col ${payslipForMonth ? 'bg-white border-slate-100 shadow-xl shadow-slate-200/50' : 'bg-slate-50/50 border-slate-50 opacity-60'}`}>
-                                        <span className="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-4 block">{month}</span>
+                                    <div key={month} className={`p-6 rounded-[2.5rem] border-2 transition-all flex flex-col items-center text-center ${payslipForMonth ? 'bg-white border-blue-50 shadow-xl shadow-slate-200/40 hover:border-blue-400' : 'bg-slate-50/50 border-slate-50 opacity-40'}`}>
+                                        <span className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400 mb-6 block">{month}</span>
                                         {payslipForMonth ? (
                                             <DocumentActionButton 
                                                 employeeId={employee.id} 
@@ -590,9 +593,9 @@ const EmployeeProfileView: React.FC<{
                                                 fullWidth={true} 
                                             />
                                         ) : (
-                                            <div className="flex items-center justify-center space-x-2 w-full px-3 py-4 bg-slate-100/50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">
-                                                <FileX className="w-4 h-4" />
-                                                <span>Kosong</span>
+                                            <div className="flex flex-col items-center justify-center space-y-2 w-full p-4 bg-slate-100/50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">
+                                                <FileX className="w-5 h-5 mb-1" />
+                                                <span>Belum Ada</span>
                                             </div>
                                         )}
                                     </div>
@@ -605,12 +608,12 @@ const EmployeeProfileView: React.FC<{
                 {activeTab === 'pengkinian data' && (
                     <div className="animate-fadeIn">
                         {pendingSubmission ? (
-                             <div className="text-center py-16 px-6 bg-amber-50/50 rounded-[2.5rem] border-2 border-dashed border-amber-200">
-                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto text-amber-500 shadow-xl mb-6">
-                                    <Clock className="w-10 h-10" />
+                             <div className="text-center py-20 px-8 bg-amber-50/50 rounded-[3rem] border-2 border-dashed border-amber-200 shadow-inner">
+                                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto text-amber-500 shadow-xl mb-8">
+                                    <Clock className="w-12 h-12 animate-pulse" />
                                 </div>
-                                <h3 className="text-xl font-black text-slate-800 tracking-tight">Menunggu Verifikasi PIC</h3>
-                                <p className="text-sm text-slate-500 mt-3 leading-relaxed max-w-sm mx-auto font-medium">
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Menunggu Verifikasi PIC</h3>
+                                <p className="text-base text-slate-500 mt-4 leading-relaxed max-w-sm mx-auto font-medium">
                                     Data Anda yang dikirim pada <span className="text-amber-600 font-bold">{new Date(pendingSubmission.submitted_at).toLocaleString('id-ID')}</span> sedang kami tinjau. Fitur pengkinian akan terbuka kembali setelah disetujui.
                                 </p>
                             </div>
@@ -643,23 +646,29 @@ interface EmployeePortalProps {
 
 const EmployeePortal: React.FC<EmployeePortalProps> = ({ verifiedEmployee, onLogout, ...allData }) => {
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col p-4 md:p-10">
-            <header className="max-w-4xl mx-auto w-full flex items-center justify-between mb-8 px-4">
-                <div className="flex items-center space-x-3">
-                    <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-10" />
-                    <div className="h-6 w-px bg-slate-300 mx-2"></div>
-                    <span className="text-xs font-black text-slate-800 tracking-[0.3em] uppercase">Employee Portal</span>
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col p-4 md:p-12">
+            {/* Header: Fixed Professional Spacing and safe area */}
+            <header className="max-w-4xl mx-auto w-full flex items-center justify-between mb-12 px-6 py-2 bg-white/60 backdrop-blur-lg rounded-[2rem] border border-white shadow-xl shadow-slate-200/50">
+                <div className="flex items-center space-x-4">
+                    <div className="bg-slate-900 p-2 rounded-xl">
+                        <img src="https://i.imgur.com/P7t1bQy.png" alt="SWAPRO Logo" className="h-8 brightness-0 invert" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-400 tracking-[0.4em] uppercase leading-none mb-1">Portal Mandiri</span>
+                        <span className="text-sm font-black text-slate-800 tracking-tight uppercase">Karyawan SWA PRO</span>
+                    </div>
                 </div>
                 <button 
                     onClick={onLogout} 
-                    className="p-3 bg-white text-red-500 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:bg-red-50 transition-all active:scale-90"
+                    className="group flex items-center space-x-2 p-3 bg-red-50 text-red-500 rounded-2xl shadow-sm border border-red-100 hover:bg-red-500 hover:text-white transition-all active:scale-95"
                     title="Keluar dari Portal"
                 >
+                    <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline group-hover:inline-block">Logout</span>
                     <LogOut className="w-5 h-5" />
                 </button>
             </header>
             
-            <main className="max-w-4xl mx-auto w-full pb-20 animate-fadeIn">
+            <main className="max-w-4xl mx-auto w-full pb-24">
                 <EmployeeProfileView 
                     employee={verifiedEmployee} 
                     clients={allData.clients} 
@@ -672,15 +681,21 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ verifiedEmployee, onLog
                     onCreateSubmission={allData.onCreateSubmission}
                 />
                 
-                <p className="text-center mt-10 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] opacity-40">
-                    Sistem Manajemen Kepegawaian • PT SWAPRO International
-                </p>
+                <div className="text-center mt-12 space-y-2 opacity-50 select-none">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">
+                        PT SWAPRO International
+                    </p>
+                    <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
+                        Secure Human Resource Management System v3.0
+                    </p>
+                </div>
             </main>
             
             <style>{`
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+                @keyframes slideIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-slideIn { animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
         </div>
     );
