@@ -317,14 +317,11 @@ const ExpandableSocialFAB: React.FC = () => {
     ];
 
     return (
-        <div ref={containerRef} className="fixed bottom-8 right-6 z-[100] flex flex-col items-end">
+        <div ref={containerRef} className="fixed bottom-8 left-6 z-[100] flex flex-col items-start">
             {/* Options Menu */}
-            <div className={`flex flex-col items-end space-y-3 mb-4 transition-all duration-500 ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+            <div className={`flex flex-col items-start space-y-3 mb-4 transition-all duration-500 ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
                 {socialLinks.map((link, index) => (
                     <div key={link.name} className="flex items-center gap-3 group">
-                        <span className="bg-white/80 backdrop-blur-md text-slate-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-slate-100">
-                            {link.label}
-                        </span>
                         <a
                             href={link.url}
                             target="_blank"
@@ -334,6 +331,9 @@ const ExpandableSocialFAB: React.FC = () => {
                         >
                             {link.icon}
                         </a>
+                        <span className="bg-white/80 backdrop-blur-md text-slate-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-slate-100">
+                            {link.label}
+                        </span>
                     </div>
                 ))}
             </div>

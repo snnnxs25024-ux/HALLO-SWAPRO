@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 
@@ -114,7 +115,7 @@ const AudioPlayer: React.FC = () => {
       
       {!hasInteracted ? (
         <div
-          className="fixed bottom-6 left-6 z-[100] group"
+          className="fixed bottom-6 right-6 z-[100] group"
           role="button"
           tabIndex={0}
           onClick={handleInitialPlay}
@@ -130,7 +131,7 @@ const AudioPlayer: React.FC = () => {
       ) : (
         <div
           ref={playerRef}
-          className={`fixed bottom-6 left-6 z-[100] flex items-center h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-slate-200 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'w-52' : 'w-12'}`}
+          className={`fixed bottom-6 right-6 z-[100] flex items-center h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-slate-200 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'w-52' : 'w-12'}`}
         >
           <button
             onClick={handleMainButtonClick}
