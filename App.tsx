@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip, DocumentRequest, DocumentRequestStatus, AppSettings, EmployeeDataSubmission, SubmissionStatus } from './types';
@@ -393,24 +395,10 @@ const App: React.FC = () => {
   if (loading) {
     return (
         <div className="flex items-center justify-center h-screen bg-slate-50">
-            <div className="flex flex-col items-center">
-                <div className="relative mb-6">
-                    <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
-                    <img 
-                        src="https://i.imgur.com/Lf2IC1Z.png" 
-                        alt="HALO SWAPRO" 
-                        className="w-24 h-24 relative z-10 object-contain animate-bounce [animation-duration:3s]" 
-                    />
-                </div>
-                <div className="flex items-center space-x-3 bg-white px-6 py-3.5 rounded-2xl shadow-xl border border-slate-100 animate-fadeIn">
-                    <Loader className="w-5 h-5 text-blue-500 animate-spin" />
-                    <p className="font-black text-slate-700 tracking-tight text-sm uppercase tracking-widest">Memuat data dari server...</p>
-                </div>
+            <div className="flex flex-col items-center space-y-4">
+                <Loader className="w-12 h-12 text-blue-500 animate-spin" />
+                <p className="font-semibold text-slate-600">Memuat data dari server...</p>
             </div>
-            <style>{`
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
-            `}</style>
         </div>
     );
   }

@@ -114,8 +114,7 @@ const ManagementModal: React.FC<{
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2 shrink-0">
-                                    {/* Fix: Wrap the ref assignment in a code block to ensure the element is not returned, satisfying TypeScript's expectation of void or a cleanup function */}
-                                    <input type="file" accept=".pdf" className="hidden" ref={el => { fileInputRefs.current[employee.id] = el; }} onChange={(e) => handleFileUpload(e, employee)} />
+                                    <input type="file" accept=".pdf" className="hidden" ref={el => fileInputRefs.current[employee.id] = el} onChange={(e) => handleFileUpload(e, employee)} />
                                     {uploading[employee.id] ? (
                                         <div className="p-2 text-slate-500"><Loader2 className="w-5 h-5 animate-spin" /></div>
                                     ) : payslip ? (

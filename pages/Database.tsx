@@ -161,18 +161,8 @@ export const EmployeeCard: React.FC<{
     
     return (
         <div className={`bg-white rounded-2xl shadow-lg shadow-slate-200/50 p-5 group transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-300 relative ${cardBorderClass}`}>
-            {/* Fix: Wrap Lucide icon in a div with the title attribute as the title prop is not supported directly */}
-            {submissionStatus === 'pending' && (
-                <div className="absolute top-4 right-4 text-blue-500" title="Menunggu Review">
-                    <Clock className="w-5 h-5" />
-                </div>
-            )}
-            {/* Fix: Wrap Lucide icon in a div with the title attribute as the title prop is not supported directly */}
-            {submissionStatus === 'approved' && (
-                <div className="absolute top-4 right-4 text-emerald-500" title="Sudah Disetujui">
-                    <CheckCircle className="w-5 h-5" />
-                </div>
-            )}
+            {submissionStatus === 'pending' && <Clock className="absolute top-4 right-4 text-blue-500 w-5 h-5" title="Menunggu Review"/>}
+            {submissionStatus === 'approved' && <CheckCircle className="absolute top-4 right-4 text-emerald-500 w-5 h-5" title="Sudah Disetujui"/>}
             <div className="flex flex-col items-center text-center">
               <img src={employee.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.fullName)}&background=E0E7FF&color=4F46E5`} alt={employee.fullName} className="w-24 h-24 rounded-full flex-shrink-0 object-cover border-4 border-white shadow-md mb-4" />
               <div className="w-full flex-1 min-w-0">
@@ -342,7 +332,7 @@ const FileUploadField: React.FC<{
                 }`}
                 onClick={() => inputRef.current?.click()}
             >
-                <input type="file" ref={inputRef} onChange={handleFileChange} className="hidden" />
+                <input type="file" ref={inputRef} onChange={handleFileSelect} className="hidden" />
                 {fileName ? (
                     <>
                         <FileCheck2 className="w-6 h-6 text-blue-600 flex-shrink-0" />
@@ -782,7 +772,7 @@ export const EmployeeModal: React.FC<{
                                 <InfoField label="Tanggal Resign" value={employeeData.resignDate ? new Date(employeeData.resignDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
                                 <InfoField label="Kontrak Ke" value={String(employeeData.contractNumber)} icon={<FileText className="w-4 h-4" />} />
                                 <InfoField className="md:col-span-2" label="Catatan SP" value={employeeData.disciplinaryActions} icon={<Shield className="w-4 h-4" />} />
-                            </BeijDetailSection>
+                            </DetailSection>
                         </>)}
                          {activeTab === 'finansial' && (<>
                             <DetailSection title="Rekening Bank & Pajak">
