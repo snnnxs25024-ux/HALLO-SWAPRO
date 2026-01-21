@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { AppSettings, Client, EmployeeDataSubmission, SubmissionStatus, Employee, User } from '../types';
 import { useNotifier } from '../components/Notifier';
@@ -176,13 +175,13 @@ const ReviewModal: React.FC<{
 type SubmissionStatusType = 'pending' | 'approved' | 'rejected' | 'not_submitted';
 
 const DataUpdate: React.FC<DataUpdateProps> = ({ settings, submissions, employees, clients, currentUser, onUpdateSettings, onUpdateSubmissionStatus, onUpdateEmployee, onDeleteEmployee }) => {
-    const [activeTab, setActiveTab] = useState<'settings' | 'review'>('settings');
+    const [activeTab, setActiveTab] = useState<'settings' | 'review'>('review');
     const [formSettings, setFormSettings] = useState({ is_active: false });
     const [isLoading, setIsLoading] = useState(false);
     const [reviewModal, setReviewModal] = useState<{ isOpen: boolean; submission: EmployeeDataSubmission | null }>({ isOpen: false, submission: null });
     
     // States for card view
-    const [filterStatus, setFilterStatus] = useState<SubmissionStatusType | 'all'>('all');
+    const [filterStatus, setFilterStatus] = useState<SubmissionStatusType | 'all'>('pending');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [employeeModal, setEmployeeModal] = useState<{ isOpen: boolean, mode: 'add' | 'edit' | 'view', data: Partial<Employee> | null }>({ isOpen: false, mode: 'view', data: null });
@@ -190,14 +189,12 @@ const DataUpdate: React.FC<DataUpdateProps> = ({ settings, submissions, employee
     const notifier = useNotifier();
 
     const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
-
-    // Fix: Define employeeMap to resolve the "Cannot find name" error.
     const employeeMap = useMemo(() => new Map(employees.map(e => [e.id, e])), [employees]);
 
-    const submissionStatusMap = useMemo(() => {
+    const { filteredEmployees, submissionStatusMap } = useMemo(() => {
         const statusMap = new Map<string, { status: SubmissionStatusType, submissionId?: string }>();
-        const sortedSubmissions = [...submissions].sort((a,b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
-        
+        const sortedSubmissions = [...submissions].sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
+
         for (const sub of sortedSubmissions) {
             if (!statusMap.has(sub.employee_id)) {
                 if (sub.status === SubmissionStatus.PENDING_REVIEW) statusMap.set(sub.employee_id, { status: 'pending', submissionId: sub.id });
@@ -206,17 +203,16 @@ const DataUpdate: React.FC<DataUpdateProps> = ({ settings, submissions, employee
             }
         }
         employees.forEach(emp => { if (!statusMap.has(emp.id)) statusMap.set(emp.id, { status: 'not_submitted' }); });
-        return statusMap;
-    }, [submissions, employees]);
 
-    const filteredEmployees = useMemo(() => {
-        return employees.filter(emp => {
+        const filtered = employees.filter(emp => {
             const searchMatch = emp.fullName.toLowerCase().includes(searchTerm.toLowerCase());
-            const statusInfo = submissionStatusMap.get(emp.id);
+            const statusInfo = statusMap.get(emp.id);
             const statusMatch = filterStatus === 'all' || statusInfo?.status === filterStatus;
             return searchMatch && statusMatch;
         });
-    }, [employees, searchTerm, filterStatus, submissionStatusMap]);
+
+        return { filteredEmployees: filtered, submissionStatusMap: statusMap };
+    }, [submissions, employees, searchTerm, filterStatus]);
 
     const paginatedEmployees = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -227,6 +223,11 @@ const DataUpdate: React.FC<DataUpdateProps> = ({ settings, submissions, employee
         const formSetting = getSettingValue(settings, 'data_update_form', { is_active: false });
         setFormSettings(formSetting);
     }, [settings]);
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterStatus, searchTerm]);
+
 
     const handleSettingsSave = async () => {
         setIsLoading(true);

@@ -125,6 +125,16 @@ export interface Employee {
     phone?: string;
   };
   
+  atasanMH?: {
+    name?: string;
+    phone?: string;
+  };
+  
+  atasanBM?: {
+    name?: string;
+    phone?: string;
+  };
+
   documents: {
     pkwtNewHire?: string;
     spLetter?: string;

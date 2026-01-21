@@ -486,6 +486,10 @@ const EmployeeProfileView: React.FC<{
                         <InfoField label="Tanggal Bergabung" value={employee.joinDate ? new Date(employee.joinDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
                         <InfoField label="End of Contract (EOC)" value={employee.endDate ? new Date(employee.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'} icon={<Calendar className="w-4 h-4" />} />
                         <InfoField label="Kontrak Kerja Ke-" value={String(employee.contractNumber)} icon={<FileText className="w-4 h-4" />} />
+                        <InfoField label="Nama Atasan MH/ARHEAD" value={employee.atasanMH?.name} icon={<UserIcon className="w-4 h-4" />} />
+                        <InfoField label="Telepon Atasan MH/ARHEAD" value={employee.atasanMH?.phone} icon={<Phone className="w-4 h-4" />} />
+                        <InfoField label="Nama BM/KACAB" value={employee.atasanBM?.name} icon={<UserIcon className="w-4 h-4" />} />
+                        <InfoField label="Telepon BM/KACAB" value={employee.atasanBM?.phone} icon={<Phone className="w-4 h-4" />} />
                         <div className="md:col-span-2">
                             <InfoField label="Catatan Kedisiplinan / SP" value={employee.disciplinaryActions} icon={<Shield className="w-4 h-4" />} />
                         </div>

@@ -94,6 +94,51 @@ const App: React.FC = () => {
     fetchInitialData();
   }, []);
   
+  // --- REALTIME SUBSCRIPTION FOR DATA UPDATE ---
+  useEffect(() => {
+    const channel = supabase
+      .channel('employee_data_submissions_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'employee_data_submissions' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRecord = payload.new as EmployeeDataSubmission;
+            if (newRecord && newRecord.employee_id) {
+              setState(prev => ({
+                ...prev,
+                employeeSubmissions: [...prev.employeeSubmissions, newRecord]
+              }));
+              notifier.addNotification(`Ada pengajuan data baru dari ${newRecord.employee_id}`, 'info');
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedRecord = payload.new as EmployeeDataSubmission;
+            if (updatedRecord && updatedRecord.id) {
+              setState(prev => ({
+                ...prev,
+                employeeSubmissions: prev.employeeSubmissions.map(s =>
+                  s.id === updatedRecord.id ? updatedRecord : s
+                )
+              }));
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const oldRecord = payload.old as Partial<EmployeeDataSubmission>;
+            if (oldRecord && oldRecord.id) {
+              setState(prev => ({
+                ...prev,
+                employeeSubmissions: prev.employeeSubmissions.filter(s => s.id !== oldRecord.id)
+              }));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [notifier]);
+  
   const handlePicLogin = (userId: string, pass: string): boolean => {
     const user = MOCK_PIC_USER.find(u => u.id === userId && u.password === pass);
     if (user) {
@@ -135,7 +180,7 @@ const App: React.FC = () => {
   const addEmployee = async (employee: Employee) => {
     const { data, error } = await supabase.from('employees').insert([employee]).select();
     if (error) { notifier.addNotification(`Gagal tambah: ${error.message}`, 'error'); return; }
-    if (data) {
+    if (data && data.length > 0) {
       setState(prev => ({ ...prev, employees: [data[0], ...prev.employees]}));
       notifier.addNotification('Karyawan berhasil ditambahkan.', 'success');
     }
@@ -147,13 +192,19 @@ const App: React.FC = () => {
       if (!existingEmployee) return;
 
       const customizer = (objValue: any, srcValue: any) => {
-        if (Array.isArray(objValue)) return srcValue;
+        if (Array.isArray(srcValue)) return srcValue;
+        return undefined;
       };
-      const mergedData = mergeWith(mergeWith({}, existingEmployee, customizer), employeeUpdate, customizer);
+      
+      const deepClonedExisting = JSON.parse(JSON.stringify(existingEmployee));
+      const mergedData = mergeWith(deepClonedExisting, employeeUpdate, customizer);
 
       const { data, error } = await supabase.from('employees').update(mergedData).eq('id', employeeUpdate.id).select();
-      if (error) { notifier.addNotification(`Gagal update: ${error.message}`, 'error'); return; }
-      if (data) {
+      if (error) { 
+          notifier.addNotification(`Gagal update: ${error.message}`, 'error'); 
+          throw error;
+      }
+      if (data && data.length > 0) {
           setState(prev => ({ ...prev, employees: prev.employees.map(e => e.id === employeeUpdate.id ? data[0] : e) }));
           notifier.addNotification('Data berhasil diperbarui.', 'success');
       }
@@ -176,13 +227,13 @@ const App: React.FC = () => {
   const addClient = async (client: Client) => {
     const { data, error } = await supabase.from('clients').insert([client]).select();
     if (error) return;
-    if (data) setState(prev => ({ ...prev, clients: [data[0], ...prev.clients] }));
+    if (data && data.length > 0) setState(prev => ({ ...prev, clients: [data[0], ...prev.clients] }));
   };
 
   const updateClient = async (client: Client) => {
     const { data, error } = await supabase.from('clients').update(client).eq('id', client.id).select();
     if (error) return;
-    if (data) setState(prev => ({ ...prev, clients: prev.clients.map(c => c.id === client.id ? data[0] : c) }));
+    if (data && data.length > 0) setState(prev => ({ ...prev, clients: prev.clients.map(c => c.id === client.id ? data[0] : c) }));
   };
     
   const deleteClient = async (clientId: string) => {
@@ -209,7 +260,7 @@ const App: React.FC = () => {
   const handleCreateDocumentRequest = async (request: Omit<DocumentRequest, 'id' | 'requestTimestamp' | 'status'>) => {
     const newRequest = { ...request, status: DocumentRequestStatus.PENDING, requestTimestamp: new Date().toISOString() };
     const { data, error } = await supabase.from('document_requests').insert(newRequest).select();
-    if (data) setState(prev => ({ ...prev, documentRequests: [...prev.documentRequests, data[0]]}));
+    if (data && data.length > 0) setState(prev => ({ ...prev, documentRequests: [...prev.documentRequests, data[0]]}));
   };
 
   const handleRespondToRequest = async (requestId: string, approved: boolean, durationMinutes?: number, rejectionReason?: string) => {
@@ -221,7 +272,7 @@ const App: React.FC = () => {
       updatePayload.accessExpiresAt = expiresAt.toISOString();
     } else if (!approved) updatePayload.rejectionReason = rejectionReason;
     const { data } = await supabase.from('document_requests').update(updatePayload).eq('id', requestId).select();
-    if (data) setState(prev => ({ ...prev, documentRequests: prev.documentRequests.map(req => req.id === requestId ? data[0] : req) }));
+    if (data && data.length > 0) setState(prev => ({ ...prev, documentRequests: prev.documentRequests.map(req => req.id === requestId ? data[0] : req) }));
   };
 
   const handleUpdateSettings = async (settings: AppSettings) => {
@@ -236,14 +287,22 @@ const App: React.FC = () => {
   const handleCreateSubmission = async (submission: Omit<EmployeeDataSubmission, 'id' | 'submitted_at' | 'status'>) => {
       const newSubmission = { ...submission, status: SubmissionStatus.PENDING_REVIEW, submitted_at: new Date().toISOString() };
       const { data } = await supabase.from('employee_data_submissions').insert(newSubmission).select();
-      if (data) setState(prev => ({...prev, employeeSubmissions: [...prev.employeeSubmissions, data[0]]}));
+      if (data && data.length > 0) setState(prev => ({...prev, employeeSubmissions: [...prev.employeeSubmissions, data[0]]}));
   };
 
   const handleUpdateSubmissionStatus = async (submissionId: string, status: SubmissionStatus, notes?: string) => {
       if (!state.currentUser) return;
       const updatePayload = { status: status, reviewed_at: new Date().toISOString(), reviewed_by: state.currentUser.id, review_notes: notes };
-      const { data } = await supabase.from('employee_data_submissions').update(updatePayload).eq('id', submissionId).select();
-      if (data) setState(prev => ({ ...prev, employeeSubmissions: prev.employeeSubmissions.map(s => s.id === submissionId ? data[0] : s) }));
+      const { data, error } = await supabase.from('employee_data_submissions').update(updatePayload).eq('id', submissionId).select();
+      
+      if (error) {
+        notifier.addNotification(`Gagal memperbarui status: ${error.message}`, 'error');
+        return;
+      }
+
+      if (data && data.length > 0 && data[0]) {
+        setState(prev => ({ ...prev, employeeSubmissions: prev.employeeSubmissions.map(s => s.id === submissionId ? data[0] : s) }));
+      }
   };
 
   if (loading) {
